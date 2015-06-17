@@ -8,7 +8,7 @@ Something you should know:
 3. Ren'py visual novel engine based on Python, so you may find yourself easy to understand the scripts if you have skill of it.
 4. Settings inside the game was translated into Chinese, if you want to create a version of your language, just copy and edit scripts in game/tl folder.
 5. This game was owned by its producter, this project only for study and practise, NEVER use it for reselling!
-6. Original dialogues is Japanese, I will do nothing to translate them.
+6. Original dialogues are Japanese, I will do nothing to translate them.
 7. Rpy files was formatted by UNIX and UTF-8 w/o BOM, notice that you have to open them with a supportive text editor.
 
 如果你阅读英语有困难，以下是中文版本：
