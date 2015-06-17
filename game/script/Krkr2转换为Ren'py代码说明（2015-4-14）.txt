@@ -1,0 +1,85 @@
+更新日期：2015年4月14日
+
+更新内容：
+修改#bg black的定义
+修改#bg eyecatch的定义
+其他细节修改
+
+
+目前已知的代码转换方法：
+
+Krkr2代码：			Ren'py对应代码：
+
+#bg				scene（经过定义，所有背景文件放在bg/目录下，全部小写，例：#bg bg01a ---- scene bg bg01a）
+
+#savetitle 				$ save_name = ""
+#mes on/#system on		无需使用
+;				#（代码注释，当做空行处理）
+#bgm				play music ""（音乐全部放在sound/目录下，例：#bgm 0 bgm07 ---- play music "sound/BGM17.ogg"，切记Ren'py区分大小写！）
+
+#voice 				voice ""（已经经过定义，无需输入完整目录。例：#voice RISA_0001 ---- voice "Risa_0001"，所有音频文件名基本上是首字母大写，七海的音频文件没有下划线，mobJYOSIA的文件名是mobJyosiA，以此类推）
+
+#wipe fade			with dis（已经经过定义，dis是一个渐变的转场特效）
+#cg 1 xxx 400 0			show （经过定义，所有立绘的编写方式为：#cg 1 tri01s2 400 0 ---- show char tri01s2）
+#cg 1 xxx 200 0			show at left（假设立绘文件名同上，则此代码表示在左侧显示：show char tri01s2 at left）
+#cg 2 xxx 600 0			show at right as r（在右侧显示，加Tag定义，详情见S002.rpy的注释）
+
+#cg 1 xxx 150 0			show at sleft as l
+#cg 3 xxx 650 0			show at sright as sr（150与650用在三个立绘同时出现的情况下，这里进行Tag的统一：150对应as l也就是L小写，200直接at left不加as，400为正中间无需加任何附加参数，600对应as r，650对应as sr，切记Tag之间不能混乱避免出现立绘覆盖的现象。）
+（补充说明：#cg 1中的数字是指立绘的序号。若只有一个，则只有1。若两个，则左边为1，右边为2。若有3个，则从左到右分别是1,2,3）
+
+#se 				play sound ""（所有音效放在sound目录下，文件名大写，例：#se 0 SE001 ---- play sound "sound/SE001.ogg"）
+
+#bg black				scene black（黑色背景，使用with dis可制造淡出到黑色的效果）
+#cg all clear			隐藏立绘，但是目前碰到的#cg all clear后面往往跟着#bg命令，而#bg命令又对应scene，scene一旦使用将会覆盖屏幕上所有的图像，所以基本不存在单独对应的命令，但也存在特殊情况。具体请见末尾hide命令情况一览。
+
+#wipe rrotate			with ro（具体我还没有研究这个转场的效果，不过也先这么用着）
+#bg EV				scene bg EV（其实EV是CG图片的文件名，开头字母大写，数字后的字母小写，比如EV03p1，调用等方法跟背景相同，出现CG时无须用hide命令隐藏立绘，因为一次scene命令会将其他图层全部覆盖。出现CG时，下一行请跟一个with Dis，切记Dis不是dis，这样的作用是自定义渐变，我将其定义为时间长度1秒。）
+
+#bgm 0 stop 1000			stop music fadeout 1（淡出音乐）
+#wipecancel disabled
+#waitcancel disabled			暂时不明
+
+#bg eyecatch			scene image eyecatch（eyecatch文件放在image目录下，原代码eyecatch01也就对应着scene image eyecatch01）
+
+#log off/log on			暂时不明
+#next2				jump（next2后面是什么字就jump到什么，例：#next2 S005 ---- jump S005。切记，每个脚本开头都需要有label命令，如label S004:，回车后才能继续写脚本。）
+
+#select select01_1 select01_2		menu:（由于具体涉及较多代码，请参见S003.rpy）
+\001				{image=}（出现在文本内容中间，其中\001在花吻16中引用到image/exch001.png，因此image=image/exch001.png）
+
+
+
+附录1：hide命令隐藏立绘适用情况一览
+
+    1、当屏幕上存在2个立绘需要变为1个时。例：
+show char tri01s2 at left
+show char tma01s2 at right as r
+此时，屏幕左边显示tri01s2，Tag为空；右边显示tma01s2，Tag为r。
+若接下来没有scene命令，旦需要变为只显示中间一个立绘，那么就需要使用hide，对有Tag的立绘进行隐藏。例：
+hide char tma01s2 at right as r
+show char tri02s2
+其中，show char xxx后若不跟任何方位和Tag指令，则默认代表“at center”，即居中显示。
+而原先at left的立绘并没有通过as命令赋予Tag，则与新的show命令Tag相同，新的立绘将会覆盖原先的。
+
+    2、当屏幕上存在3个立绘需要变成2个或1个时。例：
+show char tri01s2 at sleft as l
+show char tma01s2 
+show char tna01s2 at sright as sr
+此时，tri01s2的Tag为l，tma01s2为空，tna01s2为sr。
+如果要变成两个立绘同屏或一个立绘，那么需要隐藏as l和as sr的立绘，因为两个立绘同屏时，at left的立绘也是没有Tag的
+只有at right as r的立绘有Tag，因此at left的立绘可以直接覆盖原本没有tag的立绘。例：
+hide char tri01s2 at sleft as l
+hide char tna01s2 at sright as sr
+show char tri02s2 at left
+show char tma02s2 at right as r
+变成一个立绘原理也是一样的，就不重复说明了。
+
+    3、当屏幕上的立绘由2个变成3个时。例：
+show char tri01s2 at left
+show char tma01s2 at right as r
+此时，tri01s2的Tag为空，tma01s2为r，如果需要变为三个立绘，因为三个立绘时最左与最右的Tag不同，因此需要对原先有Tag的立绘进行隐藏。例：
+hide char tma01s2 at right as r
+show char tri01s2 at sleft as sl
+show char tma01s2
+show tna01s2 at sright as sr

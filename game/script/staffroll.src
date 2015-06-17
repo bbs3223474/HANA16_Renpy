@@ -1,0 +1,824 @@
+#log off
+#skipoff
+#wipecancel disabled
+#waitcancel disabled
+
+#bg black
+#wipe flash
+
+
+#if f2==1 roll_1
+#if f2==2 roll_2
+#if f2==3 roll_3
+#if f2==4 roll_4
+#if f2==5 roll_5
+
+
+指定ミス！
+#title
+
+
+#label roll_1
+
+
+#if s1==0 rollhed1
+#select rollhed1 rollend
+スタッフロールを見る
+スタッフロールを見ない
+
+#label rollhed1
+
+#bgm 1 bgm25
+
+
+#bg white
+#wipe fade 7000
+
+#bg sr01
+#wipe fade 5000
+#wait 7000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr02_1
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr03_1
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr04_1
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr05_1
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr06_1
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr07
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr08
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr11_1
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr12_1
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr13_1
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr14_1
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr15_1
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr16_1
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr17_1
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr18_1
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr19
+#wipe fade 3000
+#wait 12000
+
+
+#bgm 1 stop 5000
+
+#bg black
+#wipe fade 5000
+
+#set s1 1
+
+#goto rollend
+
+
+#label roll_2
+
+
+#if s2==0 rollhed2
+#select rollhed2 rollend
+スタッフロールを見る
+スタッフロールを見ない
+
+#label rollhed2
+
+#bgm 1 bgm25
+
+
+#bg white
+#wipe fade 7000
+
+#bg sr01
+#wipe fade 5000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr02_2
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr03_2
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr04_2
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr05_2
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr06_2
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr07
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr08
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr11_2
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr12_2
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr13_2
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr14_2
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr15_2
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr16_2
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr17_2
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr18_2
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr19
+#wipe fade 3000
+#wait 12000
+
+
+#bgm 1 stop 5000
+
+#bg black
+#wipe fade 5000
+
+#set s2 1
+
+#goto rollend
+
+
+#label roll_3
+
+
+#if s3==0 rollhed3
+#select rollhed3 rollend
+スタッフロールを見る
+スタッフロールを見ない
+
+#label rollhed3
+
+#bgm 1 bgm25
+
+
+#bg white
+#wipe fade 7000
+
+#bg sr01
+#wipe fade 5000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr02_3
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr03_3
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr04_3
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr05_3
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr06_3
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr07
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr08
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr11_3
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr12_3
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr13_3
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr14_3
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr15_3
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr16_3
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr17_3
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr18_3
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr19
+#wipe fade 3000
+#wait 12000
+
+
+#bgm 1 stop 5000
+
+#bg black
+#wipe fade 5000
+
+#set s3 1
+
+#goto rollend
+
+
+#label roll_4
+
+
+#if s4==0 rollhed4
+#select rollhed4 rollend
+スタッフロールを見る
+スタッフロールを見ない
+
+#label rollhed4
+
+#bgm 1 bgm25
+
+
+#bg white
+#wipe fade 7000
+
+#bg sr01
+#wipe fade 5000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr02_4
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr03_4
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr04_4
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr05_4
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr06_4
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr07
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr08
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr11_4
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr12_4
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr13_4
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr14_4
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr15_4
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr16_4
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr17_4
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr18_4
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr19
+#wipe fade 3000
+#wait 12000
+
+
+#bgm 1 stop 5000
+
+#bg black
+#wipe fade 5000
+
+#set s4 1
+
+#goto rollend
+
+
+#label roll_5
+
+
+#if s5==0 rollhed5
+#select rollhed5 rollend
+スタッフロールを見る
+スタッフロールを見ない
+
+#label rollhed5
+
+#bgm 1 bgm25
+
+
+#bg white
+#wipe fade 7000
+
+#bg sr01
+#wipe fade 5000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr02_5
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr03_5
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr04_5
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr05_5
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr06_5
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr07
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr08
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr11_5
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr12_5
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr13_5
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr14_5
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr15_5
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr16_5
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr17_5
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr18_5
+#wipe fade 3000
+#wait 5000
+
+#bg white
+#wipe fade 3000
+
+
+#bg sr19
+#wipe fade 3000
+#wait 12000
+
+
+#bgm 1 stop 5000
+
+#bg black
+#wipe fade 5000
+
+#set s5 1
+
+#goto rollend
+
+
+#label rollend
+
+#set b25 1
+
+#waitcancel enabled
+#wipecancel enabled
+#log on
+
+#title

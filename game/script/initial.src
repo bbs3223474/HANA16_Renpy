@@ -1,0 +1,57 @@
+
+#bg black
+#wipe flash
+
+;#next2 staffroll
+
+
+#if s0==1 skipok
+
+#set s0 1
+
+#movie skipoff
+
+#goto movieplay
+
+
+#label skipok
+
+#movie skipon
+
+
+#label movieplay
+
+#movie op
+
+
+#log off
+
+#set b1 1
+#set b2 1
+#set b3 1
+#set b4 1
+#set b5 1
+#set b6 1
+#set b7 1
+#set b8 1
+#set b9 1
+#set b10 1
+#set b11 1
+#set b12 1
+#set b13 1
+#set b14 1
+#set b15 1
+#set b16 1
+#set b17 1
+#set b18 1
+#set b19 1
+#set b20 1
+#set b21 1
+#set b22 1
+#set b23 1
+#set b24 1
+
+#log on
+
+#title
+
