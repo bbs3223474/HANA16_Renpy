@@ -6,10 +6,10 @@ Something you should know:
 1. I'm Chinese and not good at English, so I hope you can understand what I'm saying.
 2. My friend has built a tiny tool based on HTML in order to translate krkr2's script to Ren'py's.
 3. Ren'py visual novel engine based on Python, so you may find yourself easy to understand the scripts if you have skill of it.
-4. Settings inside the game was translated into Chinese, if you want to create a version of your language, just copy and edit scripts in game/tl folder.
+4. Settings inside the game was translated into Chinese, if you want to create an edit in your language, just copy and edit the scripts in game/tl folder.
 5. This game was owned by its producter, this project only for study and practise, NEVER use it for reselling!
 6. Original dialogues are Japanese, I will do nothing to translate them.
-7. Rpy files was formatted by UNIX and UTF-8 w/o BOM, notice that you have to open them with a supportive text editor.
+7. Rpy files were formatted by UNIX and UTF-8 w/o BOM, notice that you have to open them with a supportive text editor.
 
 如果你阅读英语有困难，以下是中文版本：
 我开始了《花吻在上 - 白雪骑士》的移植工作，由原来的krkr2引擎移植到Ren'py引擎，以使得游戏能够在移动平台运行。
