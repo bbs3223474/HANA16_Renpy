@@ -1,0 +1,263 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="Author" content="jingchangjiang1988@163.com">
+<meta name="Date" content="2015-04-13 22:43:49" />
+<meta name="Revised" content="jingchangjiang1988@163.com,2015-04-16 22:50:46">
+<meta name="Generator" content="Notepad++ V5.9">
+<meta name="Keywords" content="krkr2,ren'py,代码,转换" />
+<meta name="Description" content="krkr2转为ren'py代码" />
+<meta name="Copyright" content="Copyleft" /> 
+<meta name="Robots" content="all" />
+<title>krkr2转为ren'py代码</title>
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+<style>
+input{
+	font-size:20px;
+}
+</style>
+</head>
+<body style="text-align:center;">
+	<h1>krkr2转为ren'py代码</h1>
+	<form name="form1" id="form1">
+		<table align="center" valign="middle" border="0"><tr>
+			<td><textarea cols="60" rows="30" name="source" id="source" wrap="off"></textarea></td>
+			<td>
+				<input type="button" value="→→" onclick="trans()" />
+			<td>
+			<td><textarea cols="60" rows="30" name="target" id="target" wrap="off"></textarea></td>
+		</tr></table>
+	</form>
+	<script language="javascript" type="text/javascript">
+	<!--////
+		/*if( "function" != typeof String.prototype.trim ){
+			String.prototype.trim=function(){
+				return this.replace(/(^\s*)|(\s*$)/g, "");
+			}
+			String.prototype.ltrim=function(){
+				return this.replace(/(^\s*)/g,"");
+			}
+			String.prototype.rtrim=function(){
+				return this.replace(/(\s*$)/g,"");
+			}
+		}*/
+		/**
+		* 该映射关系可使用正则替换
+		* define (\S+) = Character\(\'([^\']+)\'.+
+		* ↓
+		* "$2"	:	"$1",
+		* 获得
+		*/
+		var charMap={
+			"璃　紗"	:	"r",
+			"美　夜"	:	"m",
+			"七　海"	:	"n",
+			"優　菜"	:	"y",
+			"玲　緒"	:	"re",
+			"麻　衣"	:	"ma",
+			"沙　雪"	:	"s",
+			"六　夏"	:	"rk",
+			"楓"	:	"k",
+			"紗　良"	:	"sr",
+			"エリス"	:	"e",
+			"雫"	:	"sk",
+			"瑠　奈"	:	"rn",
+			"貴　子"	:	"t",
+			"麗　奈"	:	"ren",
+			"？？？"	:	"x"
+		}
+		var passerTags="ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ";
+		var passerLabels="ABCDEFGHIJKLMNOPQRSTUVWXYZ";//"abcdefghijklmnopqrstuvwxyz"
+		var src=document.forms.form1.source;
+		var tgt=document.forms.form1.target;
+		var lastScrollTop=tgt.scrollTop;
+		var s2tMap={};
+		var t2sMap={};
+		function addLineMap(s,t){
+			s2tMap[s]=t;
+			var lastTgtLineNo=arguments.callee.lastTgtLineNo;
+			for(var i=lastTgtLineNo?lastTgtLineNo+1:1;i<=t;i++){
+				t2sMap[i]=s;
+			}
+			arguments.callee.lastTgtLineNo=t;
+		}
+		function escapeImage(str){
+			return str.replace("\\001","{image=image/exch001.png}");
+		}
+		function trans(){
+			var from=src.value;
+			var result="";
+			var lines=from.split("\n");
+			var tgtLineNo=0;
+			addLineMap(0,0);
+			var temp=lines[0].match(/^;S(\d+)(.+)/);
+			if(temp){
+				result+="#"+temp[2]+"\n\nlabel S"+temp[1]+":\n";
+				tgtLineNo+=3;
+			}else{
+				alert("第一行必须是“;Sxxx”格式！");
+			}
+			addLineMap(1,tgtLineNo);
+			var lastBG=null;
+			var charSet=[];
+			for(var i=1;i<lines.length;i++){
+				var line=lines[i];
+				var lineTrimed=line.trim();
+				if(lineTrimed==""){
+					result+=line;
+				}else if(lineTrimed.charAt(0)==";"){
+					result+="#"+lineTrimed.substr(1);
+				}else if(temp=lineTrimed.match(/^#savetitle\s+(.+)/)){
+					result+="$ save_name = \""+temp[1]+"\"";
+				}else if(temp=lineTrimed.match(/^#label\s+(.+)/)){
+					result+="label "+temp[1];
+				}else if(temp=lineTrimed.match(/^#goto\s+(.+)/)){
+					result+="jump "+temp[1];
+				}else if(temp=lineTrimed.match(/^#select\s+(.+)/)){
+					result+="menu:\n";
+					tgtLineNo+=1;
+					var chooses=temp[1].split(/\s+/g);
+					for(var k=0;k<chooses.length;k++){
+						line=lines[++i];
+						result+="\t\""+line+"\":\n";
+						tgtLineNo+=1;
+						result+="\tjump "+chooses[k]+"\n";
+						tgtLineNo+=1;
+					}
+				}else if(temp=lineTrimed.match(/^#mes\s+on/)){//无需使用
+					result+=lineTrimed;
+				}else if(temp=lineTrimed.match(/^#system\s+on/)){//无需使用
+					result+=lineTrimed;
+				}else if(temp=lineTrimed.match(/^#bgm\s+0\s+stop\s+1000/)){
+					result+="stop music fadeout 1";
+				}else if(temp=lineTrimed.match(/^#bgm\s+0\s+(.+)/)){
+					result+="play music \"sound/"+temp[1].toUpperCase()+".ogg\""
+				}else if(temp=lineTrimed.match(/^#bg\s+black/)){
+					result+="scene black";
+					charSet=[];
+					lastBG="scene black";
+				}else if(temp=lineTrimed.match(/^#bg eyecatch(\d+)/)){
+					result+="scene image eyecatch"+temp[1];
+					charSet=[];
+					lastBG="scene image eyecatch"+temp[1];
+				}else if(temp=lineTrimed.match(/^#bg EV(.+)/)){
+					result+="scene bg EV"+temp[1].toLowerCase()+"\nwith Dis";
+					tgtLineNo+=1;
+					charSet=[];
+					lastBG="scene bg EV"+temp[1].toLowerCase();
+				}else if(temp=lineTrimed.match(/^#bg\s+(.+)/)){
+					result+="scene bg "+temp[1];
+					charSet=[];
+					lastBG="scene bg "+temp[1];
+				}else if(temp=lineTrimed.match(/^#voice\s+(.+)/)){
+					if(/mobJYOSI/i.test(temp[1])){
+						result+="voice \""+temp[1].replace(/mobJYOSI/i,"mobJyosi")+"\""
+					}else{
+						result+="voice \""+temp[1].charAt(0).toUpperCase()+temp[1].substr(1).toLowerCase()+"\"";
+					}
+				}else if(temp=lineTrimed.match(/^#wipe\s+fade/)){
+					result+="with dis";
+				}else if(temp=lineTrimed.match(/^#cg\s+(\d+)\s+clear/)){
+					result+="hide char "+charSet[temp[1]];
+					charSet[temp[1]]=null;
+				}else if(temp=lineTrimed.match(/^#cg\s+(\d+)\s+(\S+)\s+400\s+0/)){
+					result+="show char "+temp[2];
+					charSet[temp[1]]=temp[2];
+				}else if(temp=lineTrimed.match(/^#cg\s+(\d+)\s+(\S+)\s+200\s+0/)){
+					result+="show char "+temp[2]+" at left";
+					charSet[temp[1]]=temp[2]+" at left";
+				}else if(temp=lineTrimed.match(/^#cg\s+(\d+)\s+(\S+)\s+600\s+0/)){
+					result+="show char "+temp[2]+" at right as r";
+					charSet[temp[1]]=temp[2]+" at right as r";
+				}else if(temp=lineTrimed.match(/^#cg\s+(\d+)\s+(\S+)\s+150\s+0/)){
+					result+="show char "+temp[2]+" at sleft as l";
+					charSet[temp[1]]=temp[2]+" at sleft as l";
+				}else if(temp=lineTrimed.match(/^#cg\s+(\d+)\s+(\S+)\s+650\s+0/)){
+					result+="show char "+temp[2]+" at sright as sr";
+					charSet[temp[1]]=temp[2]+" at sright as sr";
+				}else if(temp=lineTrimed.match(/^#se\s+0\s+(.+)/)){
+					result+="play sound \"sound/"+temp[1].toUpperCase()+".ogg\"";
+				}else if(temp=lineTrimed.match(/^#cg\s+all\s+clear/)){
+					result+="#allClear:\n";
+					tgtLineNo+=1;
+					for(var k=0;k<charSet.length;k++){
+						if(charSet[k]){
+							result+="hide char "+charSet[k]+"\n";
+							tgtLineNo+=1;
+							//if(k<charSet.length-1)result+="\n";
+							//tgtLineNo+=1;
+						}
+					}
+					charSet=[];
+					//添加一个注释，提示最后一次背景
+					result+="#lastBG:\n";
+					tgtLineNo+=1;
+					if(lastBG!=null){
+						result+="#"+lastBG;
+					}else{
+						result+="#scene black";
+					}
+				}else if(temp=lineTrimed.match(/^#wipe\s+(.)rotate\s+2000/)){//暂时不明
+					result+= "with "+temp[1]+"r";
+				}else if(temp=lineTrimed.match(/^#wipecancel disabled/)){//暂时不明
+					result+=lineTrimed;
+				}else if(temp=lineTrimed.match(/^#waitcancel disabled/)){//暂时不明
+					result+=lineTrimed;
+				}else if(temp=lineTrimed.match(/^#log off/)){//暂时不明
+					result+=lineTrimed;
+				}else if(temp=lineTrimed.match(/^#log on/)){//暂时不明
+					result+=lineTrimed;
+				}else if(temp=lineTrimed.match(/^#next2\s+(.+)/)){
+					result+="jump "+temp[1];
+				}else if(temp=lineTrimed.match(/^【([^】]+)】(.+)/)){
+					var charLabel=charMap[temp[1]];
+					if(charLabel){//角色
+						result+= charLabel+" \""+escapeImage(temp[2])+"\"";
+					}else if(temp[1].indexOf("女子")==0){//路人
+						var tag=temp[1].substr("女子".length);
+						var pos=passerTags.indexOf(tag);
+						var charLabel="mob"+passerLabels.charAt(pos);
+						result+= charLabel+" \""+escapeImage(temp[2])+"\"";
+					}else{//未定的人物，加#提示
+						result+="# \""+escapeImage(line)+"\"";
+					}
+				}else if(temp=lineTrimed.match(/^【/)){//未配对成功的人物,加#提示
+					result+="# \""+line+"\"";
+				}else if(temp=lineTrimed.match(/^#/)){
+					result+=lineTrimed;
+				}else{
+					result+="\""+line+"\"";
+				}
+				result+="\n";
+				tgtLineNo+=1;
+				addLineMap(i+1,tgtLineNo);
+			}
+			tgt.value=result;
+	
+			var srcLineHeight=Math.round(src.scrollHeight/lines.length);
+			var tgtLineHeight=Math.round(tgt.scrollHeight/tgtLineNo);
+			tgt.onscroll=function(e){
+				var top=t2sMap[Math.round(tgt.scrollTop/tgtLineHeight)]*srcLineHeight;
+				if(src.scrollTop!=top){
+					src.scrollTop=top;
+				}
+				if(src.scrollLeft!=tgt.scrollLeft){
+					src.scrollLeft=tgt.scrollLeft;
+				}
+			}
+			src.onscroll=function(e){
+				var top=s2tMap[Math.round(src.scrollTop/srcLineHeight)]*tgtLineHeight;
+				if(tgt.scrollTop!=top){
+					tgt.scrollTop=top;
+				}
+				if(tgt.scrollLeft!=src.scrollLeft){
+					tgt.scrollLeft=src.scrollLeft;
+				}
+			}
+		}
+		//trans();//加载后直接运行
+	////-->
+	</script>
+</body>
+</html>
