@@ -1,0 +1,16 @@
+#This file was used to declare where you should put the files which extracted from this game.
+#Because some diffierence between krkr2 and ren'py, so we have to move some files into a new folder
+#in order to deploy them in the same type of commands.
+#本文件用于说明解压出来的资源文件应该放的位置。
+#因为krkr2与ren'py之间的不同，我们需要将一部分文件移动到新的文件夹里
+#以保证在游戏中通过同一种命令调用它们。
+
+bg**.png --->game/bg
+EV**.png --->game/bg
+CU*.png --->game/char
+tma**,tri**,ter**,tsi**......png --->game/char (All of the characters' images)
+op.avi --->game/data
+mask_*.png --->game/data/mask
+bgm_p_*,cg_p_*,ex_p_*,eyecatch*,scene_p_*......png --->game/image
+BGM*,SE*.ogg --->game/sound
+Erisu_*,Risa_*,Miya_*......ogg --->game/voice (All of the characters' voices)
