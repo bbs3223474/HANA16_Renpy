@@ -422,7 +422,7 @@ r "「美夜……」"
 "言葉でもっと『好き』とか『愛している』とか……言わないといけないってことなの？"
 
 #//（以下妄想）
-show char moyan
+show char moyan as c
 show char tmi01s2 at left
 show char tri02s2 at right as r
 with Dis
@@ -442,7 +442,7 @@ r "「わかったわ、１００万回でも１０００万回でも言うわ�
 
 #//（妄想終了）
 #allClear:
-hide char moyan
+hide char moyan as c
 hide char tmi01s2 at left
 hide char tri02s2 at right as r
 with dis
