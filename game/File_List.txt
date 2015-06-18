@@ -1,9 +1,9 @@
-#This file was used to declare where you should put the files which extracted from this game.
+#This file was used to declare where you should put the files which was extracted from this game.
 #Because some diffierence between krkr2 and ren'py, so we have to move some files into a new folder
 #in order to deploy them in the same type of commands.
-#±¾ÎÄ¼þÓÃÓÚËµÃ÷½âÑ¹³öÀ´µÄ×ÊÔ´ÎÄ¼þÓ¦¸Ã·ÅµÄÎ»ÖÃ¡£
-#ÒòÎªkrkr2Óëren'pyÖ®¼äµÄ²»Í¬£¬ÎÒÃÇÐèÒª½«Ò»²¿·ÖÎÄ¼þÒÆ¶¯µ½ÐÂµÄÎÄ¼þ¼ÐÀï
-#ÒÔ±£Ö¤ÔÚÓÎÏ·ÖÐÍ¨¹ýÍ¬Ò»ÖÖÃüÁîµ÷ÓÃËüÃÇ¡£
+#æœ¬æ–‡ä»¶ç”¨äºŽè¯´æ˜Žè§£åŽ‹å‡ºæ¥çš„èµ„æºæ–‡ä»¶åº”è¯¥æ”¾çš„ä½ç½®ã€‚
+#å› ä¸ºkrkr2ä¸Žren'pyä¹‹é—´çš„ä¸åŒï¼Œæˆ‘ä»¬éœ€è¦å°†ä¸€éƒ¨åˆ†æ–‡ä»¶ç§»åŠ¨åˆ°æ–°çš„æ–‡ä»¶å¤¹é‡Œ
+#ä»¥ä¿è¯åœ¨æ¸¸æˆä¸­é€šè¿‡åŒä¸€ç§å‘½ä»¤è°ƒç”¨å®ƒä»¬ã€‚
 
 bg**.png --->game/bg
 EV**.png --->game/bg
