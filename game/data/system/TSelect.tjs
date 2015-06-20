@@ -1,0 +1,115 @@
+//==============================================================
+//	TSelect
+//==============================================================
+
+class TSelect{
+
+	var ItemHeight=32;
+	var ItemPitch=54;
+	var ItemCenter=194;
+	var ItemFontSize=24;
+	var ItemFontColor=0xffffffff;
+	var FileSelectImage="selectimage";
+
+	var owner;
+	var layer;
+	var items;	//	caption,label,index,enabled
+	var buttons;
+	var hide;
+	var busy;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TSelect(owner){
+		this.owner=owner;
+		layer=owner.layerSelect;
+
+		items=new Array();
+		buttons=new Array();
+		hide=false;
+		busy=false;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		delete items;
+		delete buttons;
+	}
+
+	//--------------------------------------------------------------
+	//	ëIëéàçÏê¨
+	//--------------------------------------------------------------
+	function clearSelect(){
+		for(var i=0;i<buttons.count;i++){
+			invalidate buttons[i];
+		}
+		buttons.clear();
+		items.clear();
+		busy=false;
+	}
+
+	function setSelect(index,tag,caption,label,enabled){
+		items[index]=%['tag'=>tag,'caption'=>caption,'label'=>label,'enabled'=>enabled];
+	}
+
+	function makeSelect(){
+		var pitch=ItemHeight*5/items.count;
+		if(pitch<ItemPitch){
+			pitch=ItemPitch;
+		}
+		var y=ItemCenter-(pitch*(items.count-1)+ItemHeight)/2;
+
+		buttons.clear();
+		for(var i=0;i<items.count;i++){
+			var item=items[i];
+			buttons[i]=new TButton(tWindow,layer,event,item.tag);
+			buttons[i].setImage(layer.width/2,y+pitch*i,FileSelectImage,true);
+			buttons[i].setCaption(0,0,item.caption,ItemFontSize,ItemFontColor,true,true,0);
+			buttons[i].setCaption(0,0,item.caption,ItemFontSize,ItemFontColor,true,true,1);
+			buttons[i].setCaption(0,0,item.caption,ItemFontSize,ItemFontColor,true,true,2);
+			buttons[i].setCaption(0,0,item.caption,ItemFontSize,(ItemFontColor&0xff000000)|((ItemFontColor>>1)&0x007f7f7f),true,true,3);
+			var cursor=tLocalData.getScriptSelectCursor(i);
+			buttons[i].setCursor((cursor===void||cursor=="void")?tSettings.cursorDefaultSelect:cursor);
+			buttons[i].setEnabled(item.enabled);
+			buttons[i].setVisible(true);
+			buttons[i].font.face=tGlobalData.data.environment.fontFace;
+		}
+		busy=true;
+	}
+
+	function event(param){
+		var item;
+		for(var i=0;i<items.count;i++){
+			if(param.tag==items[i].tag){
+				item=items[i];
+			}
+		}
+		tScript.script.counter=tScript.gotoLabelorFile(item.label);
+		tLocalData.data.flags.local[0]=item.tag;
+		//	éüÇ…isBusyÇ™åƒÇŒÇÍÇΩÇÁçÌèúÇ∑ÇÈ
+//		buttons[param.tag].setVisible(false);
+//		buttons.clear();
+//		items.clear();
+		busy=false;
+	}
+
+	//--------------------------------------------------------------
+	//	ëIëéàé¿çsíÜÇ©
+	//--------------------------------------------------------------
+	function isBusy(){
+		if(!busy&&buttons.count!=0){
+			clearSelect();
+		}
+		return busy;
+	}
+
+	//--------------------------------------------------------------
+	//	hide
+	//--------------------------------------------------------------
+	function setHide(hide){
+		layer.visible=!(this.hide=hide);
+	}
+}

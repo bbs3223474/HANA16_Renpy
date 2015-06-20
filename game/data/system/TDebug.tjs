@@ -1,0 +1,34 @@
+//==============================================================
+//	デバッグ
+//==============================================================
+//--------------------------------------------------------------
+//	デバッグモード true or false
+//--------------------------------------------------------------
+function isDebug(){
+	return false;
+}
+
+//--------------------------------------------------------------
+//	コンソール出力
+//--------------------------------------------------------------
+function dm(object){
+	if(typeof object=="Object"){
+		if(typeof object.count=="undefined"){
+			var temp=[];
+			temp.assign(object);
+			Debug.message("--dictionary");
+			for(var i=0;i<temp.count;i+=2){
+				Debug.message("'"+temp[i]+"'=>'"+temp[i+1]+"'");
+			}
+			Debug.message("--");
+		}else{
+			Debug.message("--array");
+			for(var i=0;i<object.count;i++){
+				Debug.message(i+":'"+object[i]+"'");
+			}
+			Debug.message("--");
+		}
+	}else{
+		Debug.message(object);
+	}
+}

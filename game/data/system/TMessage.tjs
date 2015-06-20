@@ -1,0 +1,940 @@
+//==============================================================
+//	TMessage
+//==============================================================
+var DefaultMessageSize=6;
+//var DefaultMessageColor=0xffffff;
+var DefaultMessageColor=tSettings.fontColor;
+//var DefaultMessageShadowColor=0x000000;
+var DefaultMessageShadowColor=tSettings.fontShadowColor;
+var DefaultMessageOutlineColor=tSettings.fontOutlineColor;
+var DefaultMessageWait=100;
+var DefaultMessageSizeStep=4;
+var DefaultMessageLineHeight=(int)(DefaultMessageSize*1.0)*DefaultMessageSizeStep;
+var DefaultMessageLinePitch=4;
+
+class TMessage{
+
+	var PNone=0,PTick=1,PTimeWait=2,PKeyWait=3;
+	var ModeWindow=0,ModeNovel=1;
+	var FileMessageWindow="messagewindow";
+	var FileNameWindowLeft="namewindow_l";
+	var FileNameWindowRight="namewindow_r";
+	var FileNameWindowCenter="namewindow_c";
+	var FileMessageKeyWait="messagekeywait";
+
+	var owner;
+	var phase;
+	var mode;
+	var layer,layerFrame,layerName,layerNameLeft,layerNameRight,layerNameCenter,layerString,layerKeyWait;
+	var face;	//★face描画レイヤ
+	var mstrings;
+	var waitTime,autoTime;
+	var flagKeyWait,countKeyWait;
+	var flagWaitAnime;
+	var flagReset;
+
+	var visible;
+	var hide;
+	var fadeAlpha;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TMessage(owner){
+
+		this.owner=owner;
+		layer=owner.layerMessage;
+		layer.visible=false;
+
+		layerFrame=new TLayer(tWindow,layer);
+		layerFrame.loadImages(FileMessageWindow);
+		layerFrame.setSizeToImageSize();
+		layerFrame.setPos(tSettings.messageWindowLeft,tSettings.messageWindowTop);
+		layerFrame.visible=false;
+		setWindowOpecity(tGlobalData.data.environment.winOpacity);
+
+		layerName=new TLayer(tWindow,layer);
+		layerName.setPos(tSettings.nameWindowLeft,tSettings.nameWindowTop);
+		layerName.visible=false;
+
+		layerNameLeft=new TLayer(tWindow,layer);
+		layerNameLeft.loadImages(FileNameWindowLeft);
+		layerNameLeft.setSizeToImageSize();
+		layerNameRight=new TLayer(tWindow,layer);
+		layerNameRight.loadImages(FileNameWindowRight);
+		layerNameRight.setSizeToImageSize();
+		layerNameCenter=new TLayer(tWindow,layer);
+		layerNameCenter.loadImages(FileNameWindowCenter);
+		layerNameCenter.setSizeToImageSize();
+
+		//★face
+		face=new TLayer(tWindow,layer);
+		face.visible=true;
+
+		layerString=new TLayer(tWindow,layer);
+		layerString.setPos(0,0,layer.width,layer.height);
+		mstrings=new TMStrings(layerString);
+		layerKeyWait=new TLayer(tWindow,layer);
+		layerKeyWait.loadImages(FileMessageKeyWait);
+		layerKeyWait.setPos(0,0,layerKeyWait.imageWidth\tSettings.pageWaitDivition,layerKeyWait.imageHeight);
+
+		layerString.visible=true;
+		layerString.font.face=tGlobalData.data.environment.fontFace;
+		layerString.font.bold=tGlobalData.data.environment.fontBold;
+
+		setMode(ModeWindow);
+		phase=PNone;
+		tLocalData.setScriptMessageVisible(visible=false);
+		hide=false;
+		fadeAlpha=0;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+	}
+
+	//--------------------------------------------------------------
+	//	ステータス
+	//--------------------------------------------------------------
+
+	//--------------------------------------------------------------
+	//	メッセージ
+	//--------------------------------------------------------------
+	function setMessage(message,keywait=true,anime=true){
+		mstrings.setString(message);
+		phase=PTick;
+		waitTime=0;
+		flagKeyWait=keywait;
+		flagWaitAnime=anime;
+		flagReset=false;
+		stopWaitAnime();
+		showName();
+		tLocalData.setScriptMessageWait(flagKeyWait);
+	}
+
+	function getMessage(){
+		return mstrings.getString();
+	}
+
+	function clearMessage(){
+		stopWaitAnime();
+		mstrings.resetLocation();
+		layerString.fillRect(0,0,layerString.width,layerString.height,0);
+		phase=PNone;
+		tScript.script.nowMessage="";
+	}
+
+	//--------------------------------------------------------------
+	//	名前
+	//--------------------------------------------------------------
+	function showName(){
+		//★faceこのタイミングでフェイスウィンドウの設定があったら描画
+		if(tLocalData.getScriptFaceFlag()&&tLocalData.getScriptFaceImage()!==""){
+			face.loadImages(tLocalData.getScriptFaceImage());
+			face.setSizeToImageSize();
+			face.setPos(tLocalData.getScriptFaceX()-face.width/2,tLocalData.getScriptFaceY());
+			face.visible=true;
+		} else {
+			face.visible=false;
+		}
+
+		if(mstrings.mstrings[0]!==void&&mstrings.mstrings[0].name){
+			var left=tSettings.nameWindowLeft+tSettings.nameOffsetLeft;
+			var top=tSettings.nameWindowTop+tSettings.nameOffsetTop;
+			var width=mstrings.nameWidth;
+			layerName.setSize(layerNameLeft.imageWidth+width+layerNameRight.imageWidth,layerNameCenter.imageHeight);
+			layerName.copyRect(0,0,layerNameLeft,0,0,layerNameLeft.imageWidth,layerNameLeft.imageHeight);
+			layerName.stretchCopy(layerNameLeft.imageWidth,0,width,layerNameCenter.imageHeight,layerNameCenter,0,0,layerNameLeft.imageWidth,layerNameLeft.imageHeight);
+			layerName.copyRect(layerNameLeft.imageWidth+width,0,layerNameRight,0,0,layerNameRight.imageWidth,layerNameRight.imageHeight);
+			layerName.opacity=tGlobalData.data.environment.winOpacity;
+			layerName.visible=true;
+		}else{
+			layerName.visible=false;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	tick
+	//--------------------------------------------------------------
+	function tick(flash=false){
+
+		if(fadeAlpha>0){
+			if((layer.opacity+=fadeAlpha)>=255){
+				layer.opacity=255;
+				fadeAlpha=0;
+			}else{
+				return;
+			}
+		}
+		if(fadeAlpha<0){
+			if((layer.opacity+=fadeAlpha)<=0){
+				layer.opacity=0;
+				fadeAlpha=0;
+				layer.visible=false;
+			}else{
+				return;
+			}
+		}
+
+		switch(phase){
+			case PNone:
+				break;
+			case PTick:
+				tickMessage(flash);
+				break;
+			case PTimeWait:
+				if(waitTime<=System.getTickCount()||tScript.isNext()){
+					phase=PTick;
+				}
+				break;
+			case PKeyWait:
+				if(tGameSystem.isAuto()&&autoTime<=System.getTickCount()&&!tSound.isPlayVoice()){
+					endKeyWait();
+				}else{
+					waitAnime();
+				}
+				break;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	メッセージ出力
+	//--------------------------------------------------------------
+	function tickMessage(flash){
+		do{
+			if(mstrings.isPutCharacter()){
+				var result=mstrings.putCharacter();
+				if(result&0x8000000000000000){
+					if(!tGameSystem.isSkip()&&!tScript.isNext()){
+						if(flagWaitAnime){
+							startWaitAnime();
+						}
+						autoTime=(ConfigAutoSpeedMax-tGlobalData.data.environment.autoSpeed)*20+System.getTickCount();
+						phase=PKeyWait;
+					}else if(!mstrings.isPutCharacter()){
+						if(flagReset){
+							clearMessage();
+							flagReset=false;
+						}
+						phase=PNone;
+					}
+					break;
+				}else if(result&0x4000000000000000){
+//					if(flash||tGameSystem.isSkip()||tScript.isNext()){
+					if(tGameSystem.isSkip()||tScript.isNext()){
+						clearMessage();
+					}else{
+						flagReset=true;
+					}
+				}else{
+					if(!flash&&!tGameSystem.isSkip()&&!tScript.isNext()&&(ConfigMessageSpeedMax-tGlobalData.data.environment.messageSpeed)>0){
+						waitTime=result*(ConfigMessageSpeedMax-tGlobalData.data.environment.messageSpeed)\100+System.getTickCount();
+						phase=PTimeWait;
+						break;
+					}
+				}
+			}else{
+				if(flagKeyWait&&!tGameSystem.isSkip()&&!tScript.isNext()){
+					if(flagWaitAnime){
+						startWaitAnime();
+					}
+					autoTime=(ConfigAutoSpeedMax-tGlobalData.data.environment.autoSpeed)*20+System.getTickCount();
+					phase=PKeyWait;
+					break;
+				}else{
+					phase=PNone;
+					break;
+				}
+			}
+		}while(flash||tGameSystem.isSkip()||tScript.isNext()||(ConfigMessageSpeedMax-tGlobalData.data.environment.messageSpeed)==0);
+	}
+
+	function flashMessage(){
+		if(phase==PTick||phase==PTimeWait){
+			tickMessage(true);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	キー待ち終了
+	//--------------------------------------------------------------
+	function endKeyWait(){
+		if(phase==PKeyWait){
+			stopWaitAnime();
+			if(tGlobalData.data.environment.voicecut){
+				tSound.stopVoice();
+			}
+			if(mstrings.isPutCharacter()){
+				phase=PTick;
+			}else{
+				if(flagReset){
+					clearMessage();
+					flagReset=false;
+				}
+				phase=PNone;
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	wait anime
+	//--------------------------------------------------------------
+	function waitAnime(){
+		if(layerKeyWait.visible){
+			if(countKeyWait%tSettings.pageWaitSpeed==0){
+				var cnt=countKeyWait\tSettings.pageWaitSpeed%tSettings.pageWaitDivition;
+				layerKeyWait.imageLeft=-cnt*(layerKeyWait.imageWidth\tSettings.pageWaitDivition);
+				if(mode==ModeNovel){
+					layerKeyWait.setPos(mstrings.lastRight+4,mstrings.lastBottom-layerKeyWait.imageHeight-2);
+				}else{
+					layerKeyWait.setPos(tSettings.nameWindowLeft+tSettings.pageWaitLeft,tSettings.nameWindowTop+tSettings.pageWaitTop);
+				}
+			}
+			++countKeyWait;
+		}
+	}
+
+	function startWaitAnime(){
+		countKeyWait=0;
+		layerKeyWait.imageLeft=0;
+		if(mode==ModeNovel){
+			layerKeyWait.setPos(mstrings.lastRight+4,mstrings.lastBottom-layerKeyWait.imageHeight-2);
+		}else{
+			layerKeyWait.setPos(tSettings.nameWindowLeft+tSettings.pageWaitLeft,tSettings.nameWindowTop+tSettings.pageWaitTop);
+		}
+		layerKeyWait.visible=true;
+	}
+
+	function stopWaitAnime(){
+		layerKeyWait.visible=false;
+	}
+
+	//--------------------------------------------------------------
+	//	モード
+	//--------------------------------------------------------------
+	function setMode(mode){
+		tLocalData.setScriptMessageMode(this.mode=mode);
+		if(mode==ModeWindow){
+			mstrings.setWindow(tSettings.messageWindowLeft+tSettings.messageOffsetLeft,tSettings.messageWindowTop+tSettings.messageOffsetTop,tSettings.messageWidth,tSettings.nameWindowLeft+tSettings.nameOffsetLeft,tSettings.nameWindowTop+tSettings.nameOffsetTop);
+			layer.fillRect(0,0,layerString.width,layerString.height,0x00000000);
+			layerFrame.visible=true;
+		}else{
+			mstrings.setWindow(tSettings.novelOffsetLeft,tSettings.novelOffsetTop,tSettings.novelWidth);
+			layer.fillRect(0,0,layerString.width,layerString.height,0xa0000000);
+			layerFrame.visible=false;
+		}
+		mstrings.resetLocation();
+	}
+
+	//--------------------------------------------------------------
+	//	表示、非表示
+	//--------------------------------------------------------------
+	function setVisible(visible,fade){
+		if(this.visible!=visible){
+			if(fade){
+				if(visible){
+					layer.opacity=0;
+					fadeAlpha=8;
+					layer.visible=this.visible=visible;
+					tLocalData.setScriptMessageVisible(this.visible);
+				}else{
+					layer.opacity=255;
+					fadeAlpha=-8;
+					this.visible=visible;
+					tLocalData.setScriptMessageVisible(this.visible);
+				}
+			}else{
+				layer.opacity=255;
+				fadeAlpha=0;
+				layer.visible=this.visible=visible;
+				tLocalData.setScriptMessageVisible(this.visible);
+			}
+		}
+	}
+
+	function setHide(hide){
+		if((this.hide=hide)!=false){
+			layer.visible=false;
+		}else{
+			layer.visible=visible;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	ウィンドウイメージ設定
+	//--------------------------------------------------------------
+	function setWindowImage(base,left,center,right,renew=true){
+		tLocalData.setMessageWindowFile(base,left,center,right);
+		if(renew){
+			layerFrame.loadImages(base!=void?base:FileMessageWindow);
+			layerNameLeft.loadImages(left!=void?left:FileNameWindowLeft);
+			layerNameRight.loadImages(right!=void?right:FileNameWindowRight);
+			layerNameCenter.loadImages(center!=void?center:FileNameWindowCenter);
+		}
+	}
+
+	function resetWindowImage(renew=true){
+		setWindowImage(void,void,void,void,renew);
+	}
+
+	function reloadWindowImage(){
+		setWindowImage(tLocalData.getMessageWindowFileB(),tLocalData.getMessageWindowFileL(),tLocalData.getMessageWindowFileC(),tLocalData.getMessageWindowFileR());
+	}
+
+	//ウィンドウの透過度
+	function setWindowOpecity(opecity){
+		layerFrame.opacity = opecity;
+		if(layerName isvalid && layerName!=void){
+			layerName.opacity = opecity;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	メッセージ状態
+	//--------------------------------------------------------------
+	function isBusy(){
+		return phase!=PNone;
+	}
+
+	function isFade(){
+		return fadeAlpha?true:false;
+	}
+}
+
+//==============================================================
+//	メッセージ文字列
+//==============================================================
+class TMStrings{
+
+	var layer;
+	var message;
+	var mstrings;
+	var nameLeft,nameTop,nameWidth;
+	var windowLeft,windowTop,windowWidth;
+	var currentLeft,currentTop,currentIndex;
+	var currentNameLeft,currentNameTop;
+	var lastRight,lastBottom;
+	var totalHeight;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TMStrings(layer){
+		this.layer=layer;
+		mstrings=new Array();
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		delete mstrings;
+	}
+
+	//--------------------------------------------------------------
+	//	ウィンドウ設定
+	//--------------------------------------------------------------
+	function setWindow(windowleft,windowtop,windowwidth,nameleft=void,nametop=void){
+		windowLeft=windowleft;
+		windowTop=windowtop;
+		windowWidth=windowwidth;
+		nameLeft=nameleft;
+		nameTop=nametop;
+	}
+
+	function resetLocation(){
+		currentLeft=windowLeft;
+		currentTop=windowTop;
+		currentNameLeft=nameLeft;
+		currentNameTop=nameTop;
+		lastRight=0;
+		lastBottom=DefaultMessageLineHeight;
+	}
+
+	//--------------------------------------------------------------
+	//	文字列設定
+	//--------------------------------------------------------------
+	function setString(str){
+		message=str;
+		mstrings.clear();
+
+		var status=new Dictionary();
+		status.mstrings=mstrings;
+		status.params=%['index'=>0,'left'=>0,'leftofs'=>0,'top'=>0,'width'=>0,'height'=>0,'size'=>DefaultMessageSize,'color'=>DefaultMessageColor,'shadowcolor'=>DefaultMessageShadowColor,'outlinecolor'=>DefaultMessageOutlineColor,'wait'=>DefaultMessageWait,'flash'=>false,'name'=>false,'group'=>0];
+
+		var withName=0;
+		while(status.params.index<message.length){
+
+			var params=getCharacter(message,status);
+			status.params.index=params.index;
+			//dm(params.string);
+
+			params.name=false;
+			if(withName==0){
+				if("【"==params.string){
+					//	【名前】を含む文字列
+					withName=1;
+					params.flash=true;				//	waitを無視する
+					if(nameLeft!==void){continue;}	//	windowモードだと括弧は無視
+				}else{
+					//	含まない文字列
+					withName=-1;
+				}
+			}else if(withName==1){
+				params.flash=true;					//	waitを無視する
+				if("】"==params.string){
+					//	名前終了
+					withName=2;
+					if(nameLeft!==void){continue;}	//	windowモードだと括弧は無視
+				}else{
+					if(nameLeft!==void){
+						params.name=true;			//	name欄に表示
+					}
+				}
+			}
+
+			if("("==params.string){
+				var to=message.indexOf(")",status.params.index);
+				if(to!=-1){
+					var length=to-status.params.index;
+					var com=message.substring(status.params.index,length);
+					//dm("com:"+com);
+					if(com.length){
+						var list=/(.*)\|(.*)/.exec(com);
+						//dm(status.params.index+"-"+to);
+						//dm(list);
+						if(!list.count){
+							//	()の中に|が無かった場合
+							list[1]=com;	//	文字列設定
+							list[2]="";		//	ルビなし
+						}
+						if(list[1].length){
+
+							//	文字列とルビのリストを作る
+							var strList=new Array();
+							var rubyList=new Array();
+							var strWidth=0;
+							var rubyWidth=0;
+							var fontSize=params.size*DefaultMessageSizeStep;
+
+							//	文字列リスト
+							(Dictionary.assign incontextof status.params)(params);
+							status.params.index=0;
+							status.params.group+=0x8001;
+							while(status.params.index<list[1].length){
+								var tempparams=getCharacter(list[1],status);
+								strList.add(tempparams);
+								strWidth+=tempparams.width;
+								(Dictionary.assign incontextof status.params)(tempparams);
+							}
+
+							//	ルビリスト
+							(Dictionary.assign incontextof status.params)(params);
+							status.params.index=0;
+							status.params.group+=0x8001;
+							status.params.size\=2;
+							while(status.params.index<list[2].length){
+								var tempparams=getCharacter(list[2],status);
+								rubyList.add(tempparams);
+								rubyWidth+=tempparams.width;
+								(Dictionary.assign incontextof status.params)(tempparams);
+							}
+
+							//	ルビが文字幅より長い場合は文字幅を広げる
+							if(rubyWidth>strWidth){
+								var w=((rubyWidth-strWidth)+(strList.count-1))\strList.count;
+								strWidth=0;
+								for(var i=0;i<strList.count;i++){
+									strWidth+=strList[i].width+=w;
+									strList[i].leftofs+=w\2;
+								}
+							}
+
+/*
+							if(false&&strList.count>=3&&strWidth-(strList[0].width+strList[strList.count-1].width)\2>=rubyWidth){
+								//	３文字以上で最初の文字の中央から最後の文字の中央に収まるとき
+								strWidth-=(strList[0].width+strList[strList.count-1].width)\2;
+								var pitch=rubyList.count>=2?strWidth\(rubyList.count-1):0;
+								var left=strList[0].width\2;
+								for(var i=0;i<rubyList.count;i++){
+									var j,sum=0;
+									for(j=0;j<strList.count;j++){
+										sum+=strList[j].width;
+										if(left<=sum){
+											break;
+										}
+									}
+									rubyList[i].leftofs=left-(sum-strList[j].width)-rubyList[i].width\2-strList[j].leftofs;
+									if(strList[j].ruby===void){
+										strList[j].ruby=new Array();
+									}
+									strList[j].ruby.add(rubyList[i]);
+									left+=pitch;
+								}
+							}else{
+*/
+								//	それ以外
+								var left=(strWidth-rubyWidth)\2;
+								for(var i=0;i<rubyList.count;i++){
+									var j,sum=0;
+									for(j=0;j<strList.count;j++){
+										sum+=strList[j].width;
+										if(left<=sum){
+											break;
+										}
+									}
+									rubyList[i].leftofs=left-(sum-strList[j].width)-strList[j].leftofs;
+									if(strList[j].ruby===void){
+										strList[j].ruby=new Array();
+									}
+									strList[j].ruby.add(rubyList[i]);
+									left+=rubyList[i].width;;
+								}
+/*
+							}
+*/
+
+							for(var i=0;i<strList.count;i++){
+								mstrings.add(strList[i]);
+							}
+						}
+					}
+					params.index=to+1;
+					++params.group;
+					(Dictionary.assign incontextof status.params)(params);
+					continue;
+				}
+			}
+
+			//dm(params.string);
+			if(!/[)!?\]}￠°’”‰′″℃、。々〉》」』】〕ぁぃぅぇぉっゃゅょゎ゛゜ゝゞァィゥェォッャュョヮヵヶ・ーヽヾ！％）？］｝｡｣､･ｧｨｩｪｫｬｭｮｯｰﾞﾟ￠]/.test(params.string)){
+				++params.group;
+			}
+			if(/[―…‥]/.test(params.string)&&(mstrings.count>0&&mstrings[mstrings.count-1].string==params.string)){
+				--params.group;
+			}
+			mstrings.add(params);
+			(Dictionary.assign incontextof status.params)(params);
+		}
+
+		//	座標設定
+		totalHeight=0;
+		nameWidth=0;
+		var index=0;
+		var startIndex=index;
+		var locate=false;
+		while(index<mstrings.count){
+			if(mstrings[index].name){
+				mstrings[index].left=currentNameLeft+mstrings[index].leftofs;
+				currentNameLeft+=mstrings[index].width;
+				nameWidth+=mstrings[index].width;
+				++index;
+			}else if(mstrings[index].string=="\\"&&mstrings[index].escape=="cr"){
+				//	改行する
+				if(index>0&&mstrings[index-1].name){
+					//	名前のすぐ後の改行
+					var maxHeight=setStringLocation(mstrings,startIndex,index,currentNameTop);
+					startIndex=++index;
+					currentNameLeft=nameLeft;
+					currentNameTop+=maxHeight;
+					totalHeight+=maxHeight+DefaultMessageLinePitch;
+					locate=true;
+				}else{
+					//	メッセージの改行
+					var maxHeight=setStringLocation(mstrings,startIndex,index,currentTop);
+					startIndex=++index;
+					currentLeft=windowLeft;
+					currentTop+=maxHeight+DefaultMessageLinePitch;
+					totalHeight+=maxHeight+DefaultMessageLinePitch;
+					locate=true;
+				}
+			}else if(mstrings[index].string=="\\"&&mstrings[index].escape=="key"){
+				//	キー待ち
+				++index;
+			}else if(currentLeft+mstrings[index].width<=windowLeft+windowWidth){
+				mstrings[index].left=currentLeft+mstrings[index].leftofs;
+				currentLeft+=mstrings[index].width;
+				++index;
+				locate=false;
+			}else{
+				//	windowサイズを超えたら禁則処理
+				var endIndex=index;
+				while(startIndex<=index){
+					//	次の文字とグループまたは行末禁止文字の場合は１文字削る
+					//	行末に \a が来ると行末禁止文字が行末に無いということになるが仕様ってことで
+					//	ex. 文字文字文字（\a
+					if((mstrings[index-1].group&0x7fff)==(mstrings[index].group&0x7fff)||/[(\[{‘“〈《「『【〔（［｛｢]/.test(mstrings[index-1].string)){
+						--index;
+					}else{
+						break;
+					}
+				}
+				if(startIndex==index){
+					//	削りすぎて文字が無くなったら禁則は無視する
+					index=endIndex;
+				}
+
+				//	改行する
+				var maxHeight=setStringLocation(mstrings,startIndex,index,currentTop);
+				startIndex=index;
+				currentLeft=windowLeft;
+				currentTop+=maxHeight+DefaultMessageLinePitch;
+				totalHeight+=maxHeight+DefaultMessageLinePitch;
+				locate=true;
+			}
+		}
+		if(!locate){
+			var maxHeight=setStringLocation(mstrings,startIndex,index,currentTop);
+			totalHeight+=maxHeight+DefaultMessageLinePitch;
+		}
+		currentIndex=0;
+	}
+
+	//--------------------------------------------------------------
+	//	文字列取得
+	//--------------------------------------------------------------
+	function getString(){
+		var result=void;
+		for(var i=0;i<mstrings.count;i++){
+			if(!mstrings[i].name){
+				if(mstrings[i].string=='\\'){
+					if(mstrings[i].escape=='cr'){
+//						if(i>0&&mstrings[i-1].name){
+							continue;
+//						}else{
+//							break;
+//						}
+					}else if(mstrings[i].escape=='key'||mstrings[i].escape=='page'){
+						continue;
+					}
+				}
+				result+=mstrings[i].string;
+			}
+		}
+		return result;
+	}
+
+	//--------------------------------------------------------------
+	//	文字列の座標を確定する
+	//--------------------------------------------------------------
+	function setStringLocation(ms,start,end,top){
+		var max=DefaultMessageLineHeight;
+		for(var i=start;i<end;i++){
+			var height=ms[i].height+(ms[i].ruby===void?0:ms[i].ruby[0].height);
+			if(height>max){
+				max=height;
+			}
+		}
+		//max+=DefaultMessageLinePitch;
+		for(var i=start;i<end;i++){
+			ms[i].top=top+(max-ms[i].height);
+		}
+		return max;
+	}
+
+	//--------------------------------------------------------------
+	//	メッセージから１文字取得
+	//--------------------------------------------------------------
+	function getCharacter(_message,_status,rubyflag=false){
+		var result=new Dictionary();
+		(Dictionary.assign incontextof result)(_status.params);
+		result.flash=false;											//	初期値は flash=false
+		while(result.index<_message.length){
+			var c=_message.charAt(result.index);
+			if(c=="["){
+				var to=_message.indexOf("]",result.index);
+				if(to!=-1){
+					var length=to-result.index+1;
+					var com=_message.substring(result.index+1,length-2).trim();
+					if(com.length){
+						//dm(result.index+"-"+to+":"+com);
+						if(com=="r"){
+							//	改行指定
+							result.string="\\";
+							result.escape="cr";
+							result.width=0;
+							result.height=0;
+							result.flash=true;
+							result.index=to+1;
+							return result;
+						}else if(com=="k"){
+							//	キー待ち
+							result.string="\\";
+							result.escape="key";
+							result.width=0;
+							result.height=0;
+							result.flash=true;
+							result.index=to+1;
+							return result;
+						}else if(com=="p"){
+							//	改ページ
+							result.string="\\";
+							result.escape="page";
+							result.width=0;
+							result.height=0;
+							result.flash=true;
+							result.index=to+1;
+							return result;
+						}else{
+							//	その他
+							var param=com.split("=");
+							if(param.count==2){
+								var key=param[0].trim();
+								if(result[key]!==void){
+									var value=param[1].trim();
+									if(key=="size"){
+										if(!rubyflag){
+											result[key]=value!="default"?+value:DefaultMessageSize;
+										}
+									}else if(key=="color"){
+										result[key]=value!="default"?+value:DefaultMessageColor;
+									}else if(key=="shadowcolor"){
+										result[key]=value!="default"?+value:DefaultMessageShadowColor;
+									}else if(key=="outlinecolor"){
+										result[key]=value!="default"?+value:DefaultMessageOutlinecolor;
+									}else if(key=="wait"){
+										result[key]=value!="default"?+value:DefaultMessageWait;
+									}
+								}
+							}
+						}
+					}
+					result.index=to+1;
+				}else{
+					layer.font.height=result.size*DefaultMessageSizeStep;
+					result.width=layer.font.getTextWidth(c);
+					result.height=layer.font.getTextHeight(c);
+					result.string=c;
+					++result.index;
+					return result;
+				}
+			}else if(c=="\\"&&result.index+1<_message.length&&(_message.charAt(result.index+1)=="n"||_message.charAt(result.index+1)=="k"||_message.charAt(result.index+1)=="p")){
+				//	改行指定
+				if(_message.charAt(result.index+1)=="n"){
+					result.string="\\";
+					result.escape="cr";
+				}else if(_message.charAt(result.index+1)=="k"){
+					result.string="\\";
+					result.escape="key";
+				}else if(_message.charAt(result.index+1)=="p"){
+					result.string="\\";
+					result.escape="page";
+				}
+				result.width=0;
+				result.height=0;
+				result.flash=true;
+				result.index+=2;
+				return result;
+			}else if(c=="\\"&&result.index+3<_message.length&&(/\d\d\d/.test(_message.substring(result.index+1,3)))){
+				//	外字
+				result.layer=new TLayer(tWindow,tWindow.layerMessage);
+				result.layer.type=ltAlpha;
+				result.layer.loadImages("exch"+_message.substring(result.index+1,3));
+				result.layer.setSizeToImageSize();
+				result.layer.visible=false;
+				result.width=result.layer.imageWidth;
+				result.height=result.layer.imageHeight;
+				result.string=_message.substring(result.index,4);
+				result.escape="exch";
+				result.index+=4;
+				return result;
+			}else{
+				layer.font.height=result.size*DefaultMessageSizeStep;
+				result.width=layer.font.getTextWidth(c);
+				result.height=layer.font.getTextHeight(c);
+				result.string=c;
+				result.escape=void;
+				++result.index;
+				return result;
+			}
+		}
+		return null;
+	}
+
+	//--------------------------------------------------------------
+	//	1回分出力
+	//--------------------------------------------------------------
+	function putCharacter(flash=false){
+		if(mstrings!==void){
+			while(currentIndex<mstrings.count){
+				var index=currentIndex++;
+				drawCharacter(mstrings[index]);
+				if(mstrings[index].string=="\\"&&mstrings[index].escape=="key"){
+					return 0x8000000000000000;
+				}else if(mstrings[index].string=="\\"&&mstrings[index].escape=="page"){
+					return 0x4000000000000000;
+				}
+				if(!flash&&!mstrings[index].flash&&mstrings[index].wait!=0){
+					return mstrings[index].wait;
+				}
+			}
+		}
+		return 0;
+	}
+
+	//--------------------------------------------------------------
+	//	出力する文字があるか
+	//--------------------------------------------------------------
+	function isPutCharacter(){
+		return mstrings!==void&&currentIndex<mstrings.count;
+	}
+
+	//--------------------------------------------------------------
+	//	１文字描画
+	//--------------------------------------------------------------
+	function drawCharacter(params){
+		if(params.escape=="exch"){
+			var left=params.left;
+			var top=params.top;
+			layer.copyRect(left,top,params.layer,0,0,params.layer.width,params.layer.height);
+			lastRight=left+params.width;
+			lastBottom=top+params.height;
+		}else if(!(params.string=="\\"&&params.escape!==void)){
+			var left=params.left;
+			var top=params.top;
+			layer.font.height=params.size*DefaultMessageSizeStep;
+			//文字の装飾
+			if(tSettings.fontOutline=='true'){	//袋文字？
+				if(tSettings.fontShadow=='true'){	//影？
+					layer.drawText(left,top,params.string,0x00000000,255,true,255,params.shadowcolor,2,2,2);
+					layer.drawText(left,top,params.string,params.color,255,true,255*4,params.outlinecolor,1,0,0);
+				}else{
+					layer.drawText(left,top,params.string,params.color,255,true,255*4,params.outlinecolor,1,0,0);
+				}
+			}else{
+				if(tSettings.fontShadow=='true'){	//影？
+					layer.drawText(left,top,params.string,params.color,255,true,255,params.shadowcolor,1,1,1);
+				}else{
+					layer.drawText(left,top,params.string,params.color,255,true,0,0,0,0,0);
+				}
+			}
+			lastRight=left+params.width;
+			lastBottom=top+params.height;
+
+			//	ルビがあったらルビも表示
+			if(params.ruby!==void){
+				for(var i=0;i<params.ruby.count;i++){
+					layer.font.height=params.ruby[i].size*DefaultMessageSizeStep;
+					if(tSettings.fontOutline=='true'){	//袋文字？
+						if(tSettings.fontShadow=='true'){	//影？
+							layer.drawText(left+params.ruby[i].leftofs,top-params.ruby[i].height,params.ruby[i].string,0x00000000,255,true,255,params.ruby[i].shadowcolor,2,2,2);
+							layer.drawText(left+params.ruby[i].leftofs,top-params.ruby[i].height,params.ruby[i].string,params.ruby[i].color,255,true,255*4,params.ruby[i].outlinecolor,1,0,0);
+						}else{
+							layer.drawText(left+params.ruby[i].leftofs,top-params.ruby[i].height,params.ruby[i].string,params.ruby[i].color,255,true,255*4,params.ruby[i].outlinecolor,1,0,0);
+						}
+					}else{
+						if(tSettings.fontShadow=='true'){	//影？
+							layer.drawText(left+params.ruby[i].leftofs,top-params.ruby[i].height,params.ruby[i].string,params.ruby[i].color,255,true,255,params.ruby[i].shadowcolor,1,1,1);
+						}else{
+							layer.drawText(left+params.ruby[i].leftofs,top-params.ruby[i].height,params.ruby[i].string,params.ruby[i].color,255,true,0,0,0,0,0);
+						}
+					}
+					//layer.drawText(left+params.ruby[i].leftofs,top-params.ruby[i].height,params.ruby[i].string,params.ruby[i].color,255,true,255,0,1,1,1);
+				}
+			}
+		}
+	}
+
+}

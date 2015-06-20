@@ -1,0 +1,72 @@
+//==============================================================
+//	メイン
+//==============================================================
+class TMain{
+
+	var timer;
+	var first;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TMain(){
+
+		first=false;
+		tScript.initialize();
+
+		//	フルスクリーンにするか
+		tWindow.setWindowMode(tGlobalData.data.environment.fullscreen);
+
+		timer=new Timer(this,"doSomething");
+		timer.interval=1;
+		timer.capacity=1;
+		timer.enabled=true;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+	}
+
+	//--------------------------------------------------------------
+	//	定時処理
+	//--------------------------------------------------------------
+	function doSomething(event){
+		if(event.target==timer){
+			if(event.type=="onTimer"){
+
+				//	初回のみ実行
+				if(!first){
+					tScript.loadScript(FileInitialScript);
+					first=true;
+					return;
+				}
+
+				//	定時処理
+				timer.enabled=false;
+				tConfig.tick();
+				tSaveLoad.tick();
+				tEffect.tick();
+				if(tTitle.tick()){
+				}else if(tLog.tick()){
+				}else{
+					if(!tConfig.isBusy()&&!tSaveLoad.isBusy()&&!tWindow.closeFlag){
+						tCanvas.tick();
+						tCanvas.render();
+						if(!tCanvas.isWipe()){
+							tScript.tick();
+						}
+						tMessage.tick();
+						tMap.tick();
+						tGameSystem.tick();
+					}
+				}
+				if(tWindow.closeFlag){
+					tWindow.exClose();
+				}
+			timer.enabled=true;
+			}
+		}
+	}
+}

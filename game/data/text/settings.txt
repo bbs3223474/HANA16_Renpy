@@ -1,0 +1,56 @@
+//	タイトル
+Title	その花びらにくちづけを　白雪の騎士
+
+//	画面サイズ
+CanvasWidth		800
+CanvasHeight	600
+
+//	ステータス
+
+
+
+VoiceUse			true	//	音声を使用するか
+SaveTitleEnabled	true	//	セーブタイトルを使用するか
+StartupScript		start	//	最初に実行するスクリプト
+
+//	メッセージウィンドウ
+MessageWindowLeft	 0		//	メッセージウィンドウ表示位置
+MessageWindowTop	458
+MessageOffsetLeft	 72		//	メッセージウィンドウ内の文字表示位置
+MessageOffsetTop	 16
+MessageWidth		660		//	文字表示領域の横幅
+NameWindowLeft		 10		//	名前ウィンドウの表示位置
+NameWindowTop		417
+NameOffsetLeft		 20		//	名前ウィンドウ内の文字表示位置
+NameOffsetTop		 8
+NovelOffsetLeft		 50		//	ノベルモード時の文字表示位置
+NovelOffsetTop		 50
+NovelWidth			700		//	ノベルモード時の文字表示領域の横幅
+PageWaitLeft		730		//	キー待ちアイコンの表示位置(ウィンドウモード時)
+PageWaitTop			136		//	（クア-ドラ追記：名前ウィンドウからの座標）
+PageWaitDivision	4		//	キー待ちアイコンの分割数
+PageWaitSpeed		70		//	キー待ちアイコンのアニメスピード（大きいほどゆっくり）
+
+//◆フォントの設定
+FontColor	0xffffff	//フォントの色指定（透過情報なし16進数6ケタ）
+FontShadow	true		//フォントに影をつけるか（true=つける、false=つけない）
+FontShadowColor	0x000000	//影の色指定（透過情報なし16進数6ケタ）
+
+//	セーブ
+
+QuickSaveOffset		100		//	クイックセーブのセーブ番号オフセット
+QuickSaveCount		1		//	クイックセーブのセーブ数
+AutoSaveOffset		110		//	オートセーブのセーブ番号オフセット
+AutoSaveCount		1		//	オートセーブのセーブ数
+
+//	カーソル
+CursorDefault		void	//	標準カーソル
+CursorDefaultSelect	void	//	選択肢のカーソル
+CursorDefaultMap	void	//	マップのカーソル
+
+//	ボタン音
+ButtonOverSE	void		//	マウスオーバー時の効果音(voidと書くと無音)
+ButtonDownSE	void		//	マウスダウン時の効果音(voidと書くと無音)
+
+//◆初期状態のシステムボイス設定(システムボイスを使用しない場合はdef)
+defaultsysv	def

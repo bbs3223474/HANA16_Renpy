@@ -1,0 +1,60 @@
+//	BGMモード画面
+
+//	背景
+//		image
+image:	ex_bgm
+
+//	ボタン
+//		tag:
+//			page	ページ切り替えボタン
+//			stop	BGM停止ボタン
+//			return	BGMモード終了ボタン
+//		image:
+//			ボタン画像
+//		x,y:
+//			表示位置
+//		cursor:
+//			マウスオーバー時のカーソル形状
+//			voidを指定するとsetting.txtで指定したデフォルトのまま変更しない
+
+//		tag		image				x	y	overSE	downSE	cursor		tag2
+button:	page	ex_p_01				40	560	void	void	void		0
+button:	page	ex_p_02				70	560	void	void	void		1
+//button:	page	saveloadpage3		160	550	void	void	void		2
+//button:	page	saveloadpageback	100	550	void	void	void		back
+//button:	page	saveloadpagenext	340	550	void	void	void		next
+//button:	stop	config_return		480 536	void	void	void
+button:	return	ex_p_10				640 560	void	void	void
+
+
+//		tag		横	縦	x	y	pitchx	pitchy	overSE	downSE	cursor
+layout:	page	2	7	50	110	360		60		void	void	void
+
+
+//		tab	image				file
+item:	0	bgm_p_01			bgm01
+item:	0	bgm_p_02			bgm02
+item:	0	bgm_p_03			bgm03
+item:	0	bgm_p_04			bgm04
+item:	0	bgm_p_05			bgm05
+item:	0	bgm_p_06			bgm06
+item:	0	bgm_p_07			bgm07
+item:	0	bgm_p_08			bgm08
+item:	0	bgm_p_09			bgm09
+item:	0	bgm_p_10			bgm10
+item:	0	bgm_p_11			bgm11
+item:	0	bgm_p_12			bgm12
+item:	0	bgm_p_13			bgm13
+item:	0	bgm_p_14			bgm14
+
+item:	0	bgm_p_15			bgm15
+item:	0	bgm_p_16			bgm16
+item:	0	bgm_p_17			bgm17
+item:	0	bgm_p_18			bgm18
+item:	0	bgm_p_19			bgm19
+item:	0	bgm_p_20			bgm20
+item:	0	bgm_p_21			bgm21
+item:	0	bgm_p_22			bgm22
+item:	0	bgm_p_23			bgm23
+item:	0	bgm_p_24			bgm24
+item:	0	bgm_p_25			bgm25

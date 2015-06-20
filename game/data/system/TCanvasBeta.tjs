@@ -1,0 +1,669 @@
+//==============================================================
+//	TCanvasBeta
+//==============================================================
+Plugins.link("extrans.dll");
+
+class TCanvasBeta{
+
+	var owner;
+	var layerBeta;
+	var layerOffsetLeft,layerOffsetTop,layerWidth,layerHeight;
+	var layers;
+	var camera;
+	var renderSize;
+	var eyeTable;
+	var thumbnail;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TCanvasBeta(owner){
+
+		this.owner=owner;
+		layerBeta=owner.layerBeta;
+		layers=new Dictionary();
+		camera=new Dictionary();
+		camera.move=new Dictionary();
+		camera.zoom=new Dictionary();
+		camera.move.flag=false;
+		camera.zoom.flag=false;
+
+		layerWidth=owner.layer.width;
+		layerHeight=owner.layer.height;
+		layerOffsetLeft=(layerBeta.width-layerWidth)/2;
+		layerOffsetTop=(layerBeta.height-layerHeight)/2;
+
+		initialize();
+
+		//	eyeì«Ç›çûÇ›
+		eyeTable=new  Dictionary();
+		var text=new Array();
+		var comment=new RegExp("[\t ]*//.*");
+		var separater=new RegExp("(^[^:]*):(.*):(.*)");
+		var separaterSpace=new RegExp("^(.*)[\t ]+(.*)");
+		try{
+			text.load(FileEyeTable);
+			for(var i=0;i<text.count;i++){
+				var str=comment.replace(text[i].trim(),"");
+				if(str.length){
+					var array=separater.match(str);
+					if(array.length>=4){
+						var param0=array[2].split(",");
+						eyeTable[array[1]]=new  Dictionary();
+						var tbl=eyeTable[array[1]];
+						tbl.filename=param0[0];
+						tbl.x=param0[1];
+						tbl.y=param0[2];
+						tbl.times=array[3].split(",");
+					}
+				}
+			}
+		}catch(e){
+		}
+
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		delete layers;
+	}
+
+	//--------------------------------------------------------------
+	//	èâä˙âª
+	//--------------------------------------------------------------
+	function initialize(){
+		var status=tLocalData.data;
+		status.reserv.clear();
+		(Dictionary.clear incontextof status.layers)();
+		(Dictionary.clear incontextof status.camera)();
+		status.camera.size=1.0;
+
+		(Dictionary.clear incontextof layers)();
+		(Dictionary.clear incontextof camera)();
+		camera.move=new Dictionary();
+		camera.zoom=new Dictionary();
+		camera.move.flag=false;
+		camera.zoom.flag=false;
+		camera.zoom.size=1;
+
+		status.depth=void;
+	}
+
+	function initializeWidthStatus(param){
+	}
+
+	//--------------------------------------------------------------
+	//	ÉåÉCÉÑçƒìoò^
+	//--------------------------------------------------------------
+	function resetLayer(){
+		var temp;
+
+		//	åªç›ÇÃCGÇÕè¡ãé
+		temp=[];
+		temp.assign(layers);
+		for(var i=0;i<temp.count;i+=2){
+			if(temp[i+1]!==void){
+				invalidate temp[i+1];
+			}
+		}
+		(Dictionary.clear incontextof layers)();
+
+		//	ë∂ç›Ç∑ÇÈÉCÉÅÅ[ÉWÇìoò^Ç∑ÇÈ
+		temp=[];
+		temp.assign(tLocalData.data.layers);
+		for(var i=0;i<temp.count;i+=2){
+			var id=temp[i];
+			var param=temp[i+1];
+
+			if(param.visible){
+				//	ìoò^
+				var filename=param.filename;
+				//dm(filename+","+param.color);
+				if(param.color){
+					filename="0x%08x".sprintf(param.color);
+				}
+				addReservSet(id,filename,param.x,param.y,param.size,param.anime);
+				if(/^cg/.test(id)){
+					//dm(orderOffset-param.order);
+					addReservOrder(id,param.order);
+				}
+				addReservAlpha(id,param.alpha);
+				addReservEye(id,param.eye);
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	tick
+	//--------------------------------------------------------------
+	function tick(){
+		var status=tLocalData.data;
+		var time=System.getTickCount();
+
+		//	ÉJÉÅÉâà⁄ìÆ
+		if(camera.move.flag){
+			camera.move.cx=getCurrent(time,camera.move.startTime,camera.move.endTime,camera.move.sx,status.camera.x);
+			camera.move.cy=getCurrent(time,camera.move.startTime,camera.move.endTime,camera.move.sy,status.camera.y);
+			if(time>=camera.move.endTime){
+				camera.move.cx=status.camera.x;
+				camera.move.cy=status.camera.y;
+				camera.move.flag=false;
+				if(camera.blur){
+					delete camera.blur;
+					renderSize=void;
+				}
+			}
+			var temp=[];
+			temp.assign(status.layers);
+			for(var i=0;i<temp.count;i+=2){
+				var id=temp[i];
+				status.layers[id].render=true;
+			}
+		}
+
+		//	ÉJÉÅÉâägëÂèkè¨
+		if(camera.zoom.flag){
+			camera.zoom.csize=getCurrent(time,camera.zoom.startTime,camera.zoom.endTime,camera.zoom.size*1000,status.camera.size*1000)/1000;
+			if(time>=camera.zoom.endTime){
+				camera.zoom.csize=status.camera.size;
+				camera.zoom.flag=false;
+			}
+		}
+
+		var temp=[];
+		temp.assign(layers);
+		for(var i=0;i<temp.count;i+=2){
+			temp[i+1].tick(time);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	ï`âÊ
+	//--------------------------------------------------------------
+	function render(canvas,renew=false,force=false){
+
+		var status=tLocalData.data;
+		var temp=[];
+		temp.assign(status.layers);
+		for(var i=0;i<temp.count;i+=2){
+			var id=temp[i];
+			if(status.layers[id].render||force){
+				if(layers[id]===void){
+					layers[id]=new TImageBeta(layerBeta,id);
+				}
+				layers[id].render();
+				status.layers[id].render=false;
+				renew=true;
+			}
+		}
+		var size;
+
+		if(camera.zoom.flag){
+			size=camera.zoom.csize;
+		}else{
+			size=status.camera.size;
+		}
+		if(renderSize!==size||renew){
+			if(size==1){
+				canvas.piledCopy(0,0,layerBeta,layerOffsetLeft,layerOffsetTop,layerWidth,layerHeight);
+			}else{
+				var x,y,width,height;
+				width=int(layerWidth/size);
+				height=int(layerHeight/size);
+				x=int((layerBeta.width-width)/2);
+				y=int((layerBeta.height-height)/2);
+				//	ÉåÉCÉÑÇÃçáê¨ÇlayerBetaÇ…çÏê¨
+				layerBeta.piledCopy(x,y,layerBeta,x,y,width,height);
+				//	ägëÂèkè¨
+				canvas.stretchCopy(0,0,canvas.width,canvas.height,layerBeta,x,y,width,height,status.camera.type);
+			}
+			renderSize=size;
+
+			if(camera.blur){
+				canvas.operateRect(camera.blur.x*2,camera.blur.y*2,canvas,0,0,canvas.width,canvas.height,omPsNormal,128);
+				canvas.operateRect(camera.blur.x*4,camera.blur.y*4,canvas,0,0,canvas.width,canvas.height,omPsNormal,64);
+				canvas.operateRect(camera.blur.x*8,camera.blur.y*8,canvas,0,0,canvas.width,canvas.height,omPsNormal,8);
+			}
+			renew=true;	//ÅöfilterópÇ…í«â¡
+		}
+
+		//ÅöfilterÅi"all"éûÅj
+		if(tLocalData.getScriptFilter()!=="default"&&tSettings.filter[tLocalData.getScriptFilter()][0]==="all"&&renew){
+			if(tSettings.filter[tLocalData.getScriptFilter()][10]==="true") canvas.doGrayScale();
+			canvas.adjustGamma(+tSettings.filter[tLocalData.getScriptFilter()][1],+tSettings.filter[tLocalData.getScriptFilter()][2],+tSettings.filter[tLocalData.getScriptFilter()][3],
+						+tSettings.filter[tLocalData.getScriptFilter()][4],+tSettings.filter[tLocalData.getScriptFilter()][5],+tSettings.filter[tLocalData.getScriptFilter()][6],
+						+tSettings.filter[tLocalData.getScriptFilter()][7],+tSettings.filter[tLocalData.getScriptFilter()][8],+tSettings.filter[tLocalData.getScriptFilter()][9]);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	set render flag
+	//--------------------------------------------------------------
+	function setRenderFlag(id){
+		if(id=="all"){
+			var temp=[];
+			temp.assign(layers);
+			for(var i=0;i<temp.count;i+=2){
+				setRenderFlag(temp[i]);
+			}
+		}else if(layers[id]!==void){
+			tLocalData.data.layers[id].render=true;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	çïÇ≈ìhÇËÇ¬Ç‘Ç∑
+	//--------------------------------------------------------------
+	function clear(){
+	}
+
+	//--------------------------------------------------------------
+	//	èàóùÇÃìoò^
+	//--------------------------------------------------------------
+	function addReservSet(id,name,x=0,y=0,size=void,anime=void){
+		tLocalData.data.reserv.add(%["command"=>"set","id"=>id,"name"=>name,"x"=>x,"y"=>y,"size"=>size,"anime"=>anime]);
+	}
+
+	function addReservPos(id,x=0,y=0){
+		tLocalData.data.reserv.add(%["command"=>"pos","id"=>id,"x"=>x,"y"=>y]);
+	}
+
+	function addReservAddPos(id,x=0,y=0){
+		tLocalData.data.reserv.add(%["command"=>"addpos","id"=>id,"x"=>x,"y"=>y]);
+	}
+
+	function addReservClear(id){
+		if(id=="all"){
+			var temp=[];
+			temp.assign(tLocalData.data.layers);
+			for(var i=0;i<temp.count;i+=2){
+				if(temp[i].substring(0,2)=="cg"){
+					addReservClear(temp[i]);
+				}
+			}
+		}else{
+			tLocalData.data.reserv.add(%["command"=>"clear","id"=>id]);
+		}
+	}
+
+	function addReservAlpha(id,alpha){
+		tLocalData.data.reserv.add(%["command"=>"alpha","id"=>id,"alpha"=>alpha]);
+	}
+
+	function addReservOrder(id,order){
+		tLocalData.data.reserv.add(%["command"=>"order","id"=>id,"order"=>order]);
+	}
+
+	function addReservEye(id,eye){
+		tLocalData.data.reserv.add(%["command"=>"eye","id"=>id,"eye"=>eye]);
+	}
+
+	function clearReserve(){
+		tLocalData.data.reserv.clear();
+	}
+
+	function flashReserve(){
+		var status=tLocalData.data;
+		for(var i=0;i<status.reserv.count;i++){
+			var id=status.reserv[i].id;
+			if("set"==status.reserv[i].command){
+				var filename=status.reserv[i].name;
+				var color=TImageGetColor(filename);
+				addLayer(id);
+				if((status.layers[id].color=color)==0){
+					status.layers[id].filename=filename;
+				}else{
+					status.layers[id].filename=void;
+				}
+				status.layers[id].visible=true;
+				status.layers[id].x=status.reserv[i].x;
+				status.layers[id].y=status.reserv[i].y;
+				if(status.layers[id].size===void){status.layers[id].size=1.0;}
+				if(status.reserv[i].size!==void){status.layers[id].size=status.reserv[i].size;}
+				status.layers[id].alpha=255;
+				status.layers[id].eye=true;
+				status.layers[id].render=true;
+				if(layers[id]&&layers[id].eyeLayer){
+					delete layers[id].eyeLayer;
+					layers[id].eyeLayer=void;
+				}
+			}else if("pos"==status.reserv[i].command){
+				status.layers[id].x=status.reserv[i].x;
+				status.layers[id].y=status.reserv[i].y;
+				status.layers[id].render=true;
+			}else if("addpos"==status.reserv[i].command){
+				status.layers[id].x+=status.reserv[i].x;
+				status.layers[id].y+=status.reserv[i].y;
+				status.layers[id].render=true;
+			}else if("clear"==status.reserv[i].command){
+				delete status.layers[id];
+				if(layers[id]!==void){
+					invalidate layers[id];
+					delete layers[id];
+				}
+			}else if("alpha"==status.reserv[i].command){
+				status.layers[id].alpha=status.reserv[i].alpha;
+				status.layers[id].render=true;
+			}else if("order"==status.reserv[i].command){
+				status.layers[id].order=status.reserv[i].order;
+				status.layers[id].render=true;
+			}else if("eye"==status.reserv[i].command){
+				setEye(id,status.reserv[i].eye);
+			}
+		}
+		status.reserv.clear();
+	}
+
+	function addLayer(id){
+		var status=tLocalData.data;
+
+		if(status.layers[id]===void){
+			var order;
+			if(id=="bg"){
+				order=256;
+			}else{
+				var temp=[];
+				temp.assign(status.layers);
+				order=id.substring(0,2)=="cg"?+(id.substring(2)):0;
+				while(true){
+					var flag=false;
+					for(var i=0;i<temp.count;i+=2){
+						if(temp[i+1].order==order){
+							flag=true;
+							break;
+						}
+					}
+					if(!flag){
+						break;
+					}
+					++order;
+				}
+			}
+			status.layers[id]=new Dictionary();
+			status.layers[id].order=order;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	moveê›íË
+	//--------------------------------------------------------------
+	function setMove(id,x,y,time){
+		if(layers[id]!==void){
+			layers[id].setMove(x,y,time);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	alphaê›íË
+	//--------------------------------------------------------------
+	function setAlpha(id,start,end,time=1000){
+		if(layers[id]!==void){
+			layers[id].setAlpha(start,end,time);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	zoomê›íË
+	//--------------------------------------------------------------
+	function setZoom(id,start,end,time=1000,type=stNearest){
+		if(layers[id]!==void){
+			layers[id].setZoom(start,end,time,type);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	ÉAÉjÉÅê›íË
+	//--------------------------------------------------------------
+	function setAnime(id,pattern){
+		if(layers[id]!==void&&pattern!==void){
+			layers[id].setAnime(pattern);
+		}
+	}
+
+	function stopAnime(id){
+		if(layers[id]!==void){
+			layers[id].stopAnime();
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	ÉAÉjÉÅíÜÇ©
+	//--------------------------------------------------------------
+	function isAnime(id,type){
+		if(id=="all"){
+			var temp=[];
+			temp.assign(layers);
+			for(var i=0;i<temp.count;i+=2){
+				if(isAnime(temp[i],type)){
+					return true;
+				}
+			}
+		}else if(layers[id]!==void){
+			if(type=="move"){
+				return layers[id].isMove();
+			}else if(type=="alpha"){
+				return layers[id].isAlpha();
+			}else if(type=="zoom"){
+				return layers[id].isZoom();
+			}else if(type=="anime"){
+				return layers[id].isMove()||layers[id].isAlpha()||layers[id].isZoom();
+			}
+		}
+		return false;
+	}
+
+	function cancelAnime(id){
+		if(id=="all"){
+			var temp=[];
+			temp.assign(layers);
+			for(var i=0;i<temp.count;i+=2){
+				cancelAnime(temp[i]);
+			}
+		}else if(layers[id]!==void){
+			layers[id].cancelAnime();
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	ÉÇÅ[ÉVÉáÉìÉuÉâÅ[ê›íË
+	//--------------------------------------------------------------
+	function setBlur(id,flag){
+		if(layers[id]!==void){
+			layers[id].setBlur(flag);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	ÉJÉÅÉâäJén
+	//--------------------------------------------------------------
+	function initializeCamera(){
+		var status=tLocalData.data;
+		status.camera.x=0;
+		status.camera.y=0;
+		status.camera.block=new Array();
+		status.camera.block[0]=3.0;		//	order   0~ 49
+		status.camera.block[1]=2.5;		//	order  50~ 99
+		status.camera.block[2]=2.0;		//	order 100~149
+		status.camera.block[3]=1.5;		//	order 150~199
+		status.camera.block[4]=1.0;		//	order 200~
+		status.camera.blur=false;		//	blur off
+	}
+
+	function setCameraBlock(block,value){
+		var status=tLocalData.data;
+		status.camera.block[+block]=value;
+	}
+
+	function startCamera(){
+		var status=tLocalData.data;
+		status.camera.enabled=true;
+
+		var temp=[];
+		temp.assign(status.layers);
+		for(var i=0;i<temp.count;i+=2){
+			var id=temp[i];
+			status.layers[id].camx=status.layers[id].x;
+			status.layers[id].camy=status.layers[id].y;
+			status.layers[id].render=true;
+		}
+	}
+
+	function moveCamera(x,y,time=1000){
+		var status=tLocalData.data;
+		if(tScript.isNext()){
+			status.camera.x=x;
+			status.camera.y=y;
+		}else{
+			camera.move.flag=true;
+			camera.move.sx=camera.move.cx=status.camera.x;
+			camera.move.sy=camera.move.cy=status.camera.y;
+			status.camera.x=x;
+			status.camera.y=y;
+			camera.move.startTime=System.getTickCount();
+			camera.move.endTime=camera.move.startTime+time;
+			if(status.camera.blur){
+				camera.blur=new Dictionary();
+				var mx=camera.move.sx-x;
+				var my=camera.move.sy-y;
+				camera.blur.x=mx==0?0:(mx>0?1:-1);
+				camera.blur.y=my==0?0:(my>0?1:-1);
+
+				var a;
+				a=Math.atan2(my,mx)*180/Math.PI+(180+22.5);
+				if(a<45){camera.blur.x=-1;camera.blur.y=0;
+				}else if(a<90){camera.blur.x=-1;camera.blur.y=-1;
+				}else if(a<135){camera.blur.x=0;camera.blur.y=-1;
+				}else if(a<180){camera.blur.x=1;camera.blur.y=-1;
+				}else if(a<225){camera.blur.x=1;camera.blur.y=0;
+				}else if(a<270){camera.blur.x=1;camera.blur.y=1;
+				}else if(a<315){camera.blur.x=0;camera.blur.y=1;
+				}else if(a<360){camera.blur.x=-1;camera.blur.y=1;
+				}else{camera.blur.x=-1;camera.blur.y=0;
+				}
+			}
+		}
+	}
+
+	function zoomCamera(size,time=1000,type=stNearest){
+		var status=tLocalData.data;
+		if(tScript.isNext()){
+			status.camera.size=size;
+			status.camera.type=type;
+		}else{
+			camera.zoom.flag=true;
+			camera.zoom.size=camera.zoom.csize=status.camera.size!==void?status.camera.size:1;
+			status.camera.size=size;
+			status.camera.type=type;
+			camera.zoom.startTime=System.getTickCount();
+			camera.zoom.endTime=camera.zoom.startTime+time;
+		}
+	}
+
+	function skipCamera(){
+		var status=tLocalData.data;
+		camera.move.cx=status.camera.x;
+		camera.move.cy=status.camera.y;
+		camera.move.flag=false;
+		camera.zoom.flag=false;
+		if(camera.blur){
+			delete camera.blur;
+			renderSize=void;
+		}
+	}
+
+	function endCamera(){
+		var status=tLocalData.data;
+		status.camera.enabled=false;
+		status.camera.size=1.0;
+
+		var temp=[];
+		temp.assign(status.layers);
+		for(var i=0;i<temp.count;i+=2){
+			var id=temp[i];
+			var value;
+			if(status.layers[id].order<50){value=status.camera.block[0];
+			}else if(status.layers[id].order<100){value=status.camera.block[1];
+			}else if(status.layers[id].order<150){value=status.camera.block[2];
+			}else if(status.layers[id].order<200){value=status.camera.block[3];
+			}else{value=status.camera.block[4];
+			}
+			status.layers[id].x=status.layers[id].camx+(status.layers[id].x-status.layers[id].camx+status.camera.x)*value;
+			status.layers[id].y=status.layers[id].camy+(status.layers[id].y-status.layers[id].camy+status.camera.y)*value;
+			status.layers[id].camx=0;
+			status.layers[id].camy=0;
+			status.layers[id].render=true;
+		}
+	}
+
+	function blurCamera(blur){
+		var status=tLocalData.data;
+		status.camera.blur=blur;
+	}
+
+	//--------------------------------------------------------------
+	//	åªç›à íu
+	//--------------------------------------------------------------
+	function getCurrent(currentTime,startTime,endTime,startPoint,endPoint){
+		if(endTime-startTime){
+			return (int)(+startPoint+(+endPoint-+startPoint)*(+currentTime-+startTime)/(+endTime-+startTime)+0.5);
+		}else{
+			return +endPoint;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//Åöfilter
+	//--------------------------------------------------------------
+	function setFilter(filter){
+		var status=tLocalData.data;
+
+		tLocalData.setScriptFilter(filter);
+
+		var temp=[];
+		temp.assign(status.layers);
+		for(var i=0;i<temp.count;i+=2){
+			var id=temp[i];
+			if(layers[id]){
+				layers[id].setRender();
+			}
+//			status.layers[id].render=true;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	îÌé äEê[ìx
+	//--------------------------------------------------------------
+	function setDepth(depth){
+		var status=tLocalData.data;
+		if(status.depth!==depth){
+			status.depth=depth;
+
+			var temp=[];
+			temp.assign(status.layers);
+			for(var i=0;i<temp.count;i+=2){
+				var id=temp[i];
+				if(layers[id]){
+					layers[id].setRender();
+				}
+				status.layers[id].render=true;
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	ñ⁄ÉpÉ`
+	//--------------------------------------------------------------
+	function setEye(id,flag){
+		var status=tLocalData.data;
+		if(status.layers[id]){
+			status.layers[id].eye=flag;
+			status.layers[id].render=true;
+			if(layers[id]){
+				layers[id].setRender();
+				layers[id].mylayers.eye.index=0;
+			}
+		}
+	}
+}

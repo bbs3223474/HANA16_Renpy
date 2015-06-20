@@ -1,0 +1,160 @@
+//	main phase
+
+//	wipe
+var WipeNone				= 0;
+var WipeFlash				= 1;
+var WipeFade				= 2;
+var WipeFadeWithMessage		= 3;
+
+									//	マスクパターンを使用
+var WipeBlindTop			= 4;	//	mask_blindtop
+var WipeBlindBottom			= 5;	//	mask_blindbottom
+var WipeBlindLeft			= 6;	//	mask_blindleft
+var WipeBlindRight			= 7;	//	mask_blindright
+var WipeTop					= 8;	//	mask_top
+var WipeBottom				= 9;	//	mask_bottom
+var WipeLeft				=10;	//	mask_left
+var WipeRight				=11;	//	mask_right
+var WipeLeftTop				=12;	//	mask_lefttop
+var WipeLeftBottom			=13;	//	mask_leftbottom
+var WipeHorizontalIn		=14;	//	mask_horizontalin
+var WipeHorizontalOut		=15;	//	mask_horizontalout
+var WipeVerticalIn			=16;	//	mask_verticalin
+var WipeVerticalOut			=17;	//	mask_verticalout
+var WipeBoxIn				=18;	//	mask_boxin
+var WipeBoxOut				=19;	//	mask_boxout
+var WipeCircleIn			=20;	//	mask_circlein
+var WipeCircleOut			=21;	//	mask_circleout
+var WipeRotateRight			=22;	//	mask_rotateright
+var WipeRotateLeft			=23;	//	mask_rotateleft
+var WipeHorizontalShutter	=24;
+var WipeVerticalShutter		=25;
+var WipeMask				=26;
+
+var WipeSlideInTop			=27;
+var WipeSlideInBottom		=28;
+var WipeSlideInLeft			=29;
+var WipeSlideInRight		=30;
+var WipeSlideOutTop			=31;
+var WipeSlideOutBottom		=32;
+var WipeSlideOutLeft		=33;
+var WipeSlideOutRight		=34;
+var WipePushTop				=35;
+var WipePushBottom			=36;
+var WipePushLeft			=37;
+var WipePushRight			=38;
+
+var WipePressIn				=39;
+var WipePressOut			=40;
+var WipeZoomIn				=41;
+var WipeZoomOut				=42;
+var WipeRotateZoomInLeft	=43;
+var WipeRotateZoomInRight	=44;
+var WipeRotateZoomOutLeft	=45;
+var WipeRotateZoomOutRight	=46;
+
+var WipeScrollUp			=80;
+var WipeScrollDown			=81;
+var WipeScrollLeft			=82;
+var WipeScrollRight			=83;
+var WipeShake				=84;
+var WipeShakeV				=85;
+var WipeShakeH				=86;
+var WipeShake2				=87;
+var WipeShakeV2				=88;
+var WipeShakeH2				=89;
+
+
+var TitleFlagStart			=0;
+var TitleFlagContinue		=1;
+var TitleFlagCGMode			=2;
+var TitleFlagBGMMode		=3;
+var TitleFlagSceneMode		=4;
+var TitleFlagConfig			=5;
+var TitleFlagSite			=6;
+var TitleFlagEnd			=7;
+var TitleFlagStart2			=8;
+var TitleFlagStart3			=9;
+var TitleFlagStart4			=10;
+var TitleFlagSite2			=11;
+var TitleFlagSite3			=12;
+var TitleFlagSite4			=13;
+
+//	セーブデータファイル名
+var GlobalSaveData="global.data";
+var LocalSaveData="save.data";
+var ThumbnailSaveData="image";
+var ThumbnailSaveDataExt=".bmp";
+
+//	リソースファイル名
+var FileFaceSetting="face.txt";	//★face
+var FileFilterSetting="filter.txt";	//★filter
+var FileAnimrtionTable="anime.txt";
+var FileConfigSetting="config.txt";
+var FileExBGMSetting="bgmmode.txt";
+var FileExCGSetting="cgmode.txt";
+var FileExSceneSetting="scenemode.txt";
+var FileEyeTable="eye.txt";
+var FileGameSystemSetting="gamesystem.txt";
+var FileLogSetting="log.txt";
+var FileSaveLoadSetting="saveload.txt";
+var FileScriptAssign="assign.txt";
+var FileTitleSetting="title.txt";
+var FileYesNoSetting="yesno.txt";
+var FileInitialScript="initial";
+var FileBGM="bgm%02d";
+var ExtSound=".ogg";
+var ExtMovie=".mpg";
+
+//	サウンドトラック名称
+var TrackBGM="bgm%d";
+var TrackSE="se%d";
+var TrackVoice="voice%d";
+
+//	Config
+var ConfigMessageSpeedMax=100;
+var ConfigMessageSpeedDefault=50;
+var ConfigAutoSpeedMax=100;
+var ConfigAutoSpeedDefault=50;
+var ConfigmbRightHide=0;		//	右ボタン設定(ウィンドウ消去)
+var ConfigmbRightLog=1;			//	右ボタン設定(ログ表示)
+var ConfigmbRightConfig=2;		//	右ボタン設定(コンフィグ表示)
+var ConfigVolumeMax=100;
+var ConfigMasterVolumeDefault=80;
+var ConfigBGMVolumeDefault=80;
+var ConfigSEVolumeDefault=80;
+var ConfigVoiceVolumeDefault=80;
+var ConfigBgVoiceVolumeDefault=80;
+var ConfigCharVolumeDefault=100;
+var ConfigWinOpacityMax=255;	//メッセージウィンドウ透過度
+
+//	TCanvasBeta
+var orderOffset=512;
+var layerBetaSize=2;
+
+//	カーソルテーブル
+var cursorTable=%[
+	"crDefault"=>"0",
+	"crNone"=>"-1",
+	"crArrow"=>"-2",
+	"crCross"=>"-3",
+	"crIBeam"=>"-4",
+	"crHBeam"=>"1",
+	"crSizeNESW"=>"-6",
+	"crSizeNS"=>"-7",
+	"crSizeNWSE"=>"-8",
+	"crSizeWE"=>"-9",
+	"crUpArrow"=>"-10",
+	"crHourGlass"=>"-11",
+	"crDrag"=>"-12",
+	"crNoDrop"=>"-13",
+	"crHSplit"=>"-14",
+	"crVSplit"=>"-15",
+	"crMultiDrag"=>"-16",
+	"crSQLWait"=>"-17",
+	"crNo"=>"-18",
+	"crAppStart"=>"-19",
+	"crHelp"=>"-20",
+	"crHandPoint"=>"-21",
+	"crSizeAll"=>"-22",
+	];

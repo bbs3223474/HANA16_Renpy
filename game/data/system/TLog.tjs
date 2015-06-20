@@ -1,0 +1,457 @@
+//==============================================================
+//	TLog
+//==============================================================
+class TLog{
+
+	var PNone=0,PStart=1,PTick=2,PReturn=3;
+
+	var owner;
+	var phase;
+	var layer,layerCursor,layerMessage,layerVoice;
+	var timer;
+	var logs;
+	var scrollbar;
+	var items;
+	var returnButton;
+	var layout;
+	var iy=0,ly,cy;
+	var layerBgimage;	//背景画像
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TLog(owner){
+		this.owner=owner;
+		logs=new Array();
+
+		var lines=new Array();
+		lines.load(FileLogSetting);
+		layout=new Dictionary();
+		for(var i=0;i<lines.count;i++){
+			var key,object,idx;
+			if((idx=lines[i].indexOf(":"))>0){
+				key=lines[i].substring(0,idx).trim();
+				object=lines[i].substring(idx+1).trim();
+			}
+			if(key!==void&&object!=""){
+				if("layout"==key){
+					var param=object.split(' \t',,true);
+					if(param[0]=="message"){
+						layout.message=new Dictionary();
+						layout.message.x=+param[1];
+						layout.message.y=+param[2];
+						layout.message.width=+param[3];
+						layout.message.height=+param[4];
+						layout.message.pitch=+param[5];
+					}else if(param[0]=="voice"){
+						layout.voice=new Dictionary();
+						layout.voice.image=param[1];
+						layout.voice.x=+param[2];
+					}else if(param[0]=="back"){
+						layout.back=new Dictionary();
+						layout.back.color=calc(param[1]);
+					}else if(param[0]=="bgimage"){	//背景画像
+						layout.back.image=param[1];
+					}else if(param[0]=="cursor"){
+						layout.cursor=new Dictionary();
+						layout.cursor.color=calc(param[1]);
+					}
+				}else if("slider"==key){
+					var param=object.split(' \t',,true);
+					var overSE=param[5]=="void"?void:param[5];
+					var downSE=param[6]=="void"?void:param[6];
+					scrollbar=%['tag'=>param[0],'baseImage'=>param[1],'pinImage'=>param[2],'x'=>+param[3],'y'=>param[4],'overSE'=>overSE,'downSE'=>downSE,'cursor'=>param[7]];
+				}else if("button"==key){
+					var param=object.split(' \t',,true);
+					var tag=param[0];
+					var overSE=param[4]=="void"?void:param[4];
+					var downSE=param[5]=="void"?void:param[5];
+					returnButton=%['tag'=>param[0],'image'=>param[1],'x'=>+param[2],'y'=>param[3],'overSE'=>overSE,'downSE'=>downSE,'cursor'=>param[6]];
+				}
+			}
+		}
+		phase=PNone;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		if(layer!==void){
+			delete layer;
+		}
+		if(layerCursor!==void){
+			delete layerCursor;
+		}
+		if(layerMessage!==void){
+			delete layerMessage;
+		}
+		if(layerVoice!==void){
+			delete layerVoice;
+		}
+		if(layerBgimage!==void){
+			delete layerBgimage;
+		}
+		if(items!==void){
+			delete items;
+		}
+		delete logs;
+		delete layout;
+		delete slider;
+		delete returnButton;
+	}
+
+	//--------------------------------------------------------------
+	//	メモリ解放
+	//--------------------------------------------------------------
+	function releaseLayer(){
+		if(layer!==void){
+			owner.remove(layer);
+			invalidate layer;
+			layer=void;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	表示
+	//--------------------------------------------------------------
+	function start(){
+
+		releaseLayer();
+		layer=new TLogLayer(owner,owner.primaryLayer,this);
+		owner.add(layer);
+		layer.type=ltAlpha;
+		layer.opacity=0;
+		layer.hitThreshold=0;
+		layer.setPos(0,0,tSettings.canvasWidth,tSettings.canvasHeight);
+		layer.fillRect(0,0,layer.width,layer.height,layout.back.color);
+		layer.visible=true;
+
+		//背景
+		if(layout.back.image!==void){
+			layerBgimage=new TxLayer(owner,layer);
+			layerBgimage.loadImages(layout.back.image);
+			layerBgimage.setSizeToImageSize();
+			layerBgimage.setPos(0,0);
+			layerBgimage.visible=true;
+		}
+
+		layerCursor=new TxLayer(owner,layer);
+		layerCursor.type=ltAlpha;
+		layerCursor.hitThreshold=256;
+		layerCursor.setPos(0,0,layer.width,layer.height);
+		layerCursor.fillRect(0,0,layerCursor.width,layerCursor.height,0);
+		layerCursor.visible=true;
+
+		layerMessage=new TxLayer(owner,layer);
+		layerMessage.type=ltAlpha;
+		layerMessage.hitThreshold=256;
+		layerMessage.setPos(0,0,layer.width,layer.height);
+		layerMessage.fillRect(0,0,layerMessage.width,layerMessage.height,0);
+		layerMessage.visible=true;
+		layerMessage.font.face=tGlobalData.data.environment.fontFace;
+		layerMessage.font.bold=tGlobalData.data.environment.fontBold;
+
+		layerVoice=new Layer(owner,layer);
+		layerVoice.type=ltAlpha;
+		layerVoice.loadImages(layout.voice.image);
+		layerVoice.setSizeToImageSize();
+
+		iy=ly;
+		cy=-1;
+		makeButton();
+
+		//	フェード用タイマ
+		timer=System.getTickCount();
+		phase=PStart;
+	}
+
+	//--------------------------------------------------------------
+	//	ボタン登録
+	//--------------------------------------------------------------
+	function makeButton(){
+		if(items!==void){
+			invalidate items;
+		}
+		items=new Dictionary();
+
+		//	スクロールバー
+		if(ly){
+			scrollbar.slider=new TSlider(owner,layer,event,scrollbar.tag);
+			scrollbar.slider.mode=scrollbar.slider.ModeVirtical;
+			scrollbar.slider.setImage(scrollbar.x,scrollbar.y,scrollbar.baseImage,scrollbar.pinImage);
+			scrollbar.slider.setVisible(true);
+			scrollbar.slider.setMax(ly);
+			scrollbar.slider.setPosition(iy,false,true);
+			scrollbar.slider.setCursor(scrollbar.cursor);
+			if (scrollbar.downSE!=void) scrollbar.slider.base.buttonStatus.downSE=scrollbar.downSE;	//★2012.10.29　値が"void"時はスルー
+			if (scrollbar.overSE!=void) scrollbar.slider.base.buttonStatus.overSE=scrollbar.overSE;	//★2012.10.29　値が"void"時はスルー
+		}
+
+		else{
+			with(scrollbar){
+				.slider=new Layer(owner,layer);
+				.slider.loadImages(.baseImage);
+				.slider.setPos(.x,.y,.slider.imageWidth,.slider.imageHeight\4);
+				.slider.imageTop=-.slider.imageHeight\4*3;
+				.slider.visible=true;
+			}
+		}
+
+		//戻るボタン
+		if(returnButton!==void && returnButton.tag=="return"){
+			var tag,image,x,y,overSE,downSE,cursor;
+			with(returnButton){
+				tag=.tag;
+				image=.image;
+				x=.x;
+				y=.y;
+				overSE=.overSE;
+				downSE=.downSE;
+				cursor=.cursor;
+			}
+			items[tag]=new TButton(owner,layer,event,tag);
+			with(items[tag]){
+				.setImage(x,y,image);
+				.setVisible(true);
+				.setCursor(cursor);
+				if(overSE=="off"){.buttonStatus.overSE=void;}else if(overSE!=void){.buttonStatus.overSE=overSE;}
+				if(downSE=="off"){.buttonStatus.downSE=void;}else if(downSE!=void){.buttonStatus.downSE=downSE;}
+			}
+		}
+
+		//	ページ表示
+		showPage();
+	}
+
+	function showPage(){
+
+		//	文字消去
+		layerMessage.fillRect(0,0,layerMessage.width,layerMessage.height,0);
+
+		//	文字描画
+		var y=layout.message.y;
+		for(var i=iy;i<logs.count;i++){
+			if(y+logs[i].height<=layout.message.y+layout.message.height){
+				var ms=new TMStrings(layerMessage);
+				ms.setWindow(layout.message.x,y,layout.message.width);
+				ms.resetLocation();
+				ms.setString(logs[i].message);
+				ms.putCharacter(true);
+				invalidate ms;
+
+				if(logs[i].voice!==void){
+					layerMessage.copyRect(layout.message.x-layerVoice.width-layout.voice.x,y,layerVoice,0,0,layerVoice.width,layerVoice.height);
+				}
+
+				y+=logs[i].height+layout.message.pitch;
+			}else{
+				break;
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	イベント処理
+	//--------------------------------------------------------------
+	function event(param){
+		if(param.tag=="scrollbar"){
+			if(param.position!=iy){
+				iy=param.position;
+				showPage();
+			}
+			if(!param.downPin){
+				scrollbar.slider.setPosition(iy,false,true);
+			}
+		}
+		else if(param.tag=="return"){
+			close();
+		}
+	}
+
+	function onClick(x,y){
+		if(cy!=-1){
+			//	voice 再生
+			var trackname="voice",filename,volume=100,loop=1,intime=0,outtime=0;
+			filename=logs[cy].voice;
+			tSound.play(trackname,filename,volume,loop,intime,outtime);
+		}
+	}
+
+	function onMouseWheel(shift,delta,x,y){
+		if(ly){
+			if(delta<0&&iy==ly){
+				close();
+			}else{
+				iy+=-(delta\120);
+				if(iy<0){
+					iy=0;
+				}else if(iy>ly){
+					iy=ly;
+				}
+				//★履歴非表示処理中は（スクロールバーのスライダーオブジェクトが存在しなくなったら）履歴のスクロールしないように
+				if(isvalid(scrollbar.slider)) {
+					showPage();
+					scrollbar.slider.setPosition(iy,false,true);
+					onMouseMove(x,y,shift);
+				}
+			}
+		}else{
+			if(delta<0){
+				close();
+			}
+		}
+	}
+
+	function onMouseMove(x,y,shift){
+		if(x>=layout.message.x-layerVoice.width-layout.voice.x&&x<layout.message.x+layout.message.width){
+			var ty=layout.message.y;
+			for(var i=iy;i<logs.count;i++){
+				if(ty+logs[i].height<=layout.message.y+layout.message.height){
+					if(logs[i].voice!==void&&y>=ty&&y<ty+logs[i].height){
+						if(cy!=i){
+							layerCursor.fillRect(0,0,layerCursor.width,layerCursor.height,0x00000000);
+							layerCursor.fillRect(layout.message.x-layerVoice.width-layout.voice.x,ty,layout.message.width+layerVoice.width+layout.voice.x,logs[i].height,layout.cursor.color);
+							cy=i;
+						}
+						return;
+					}
+					ty+=logs[i].height+layout.message.pitch;
+				}else{
+					break;
+				}
+			}
+		}
+		if(cy!=-1){
+			layerCursor.fillRect(0,0,layerCursor.width,layerCursor.height,0x00000000);
+			cy=-1;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	Close
+	//--------------------------------------------------------------
+	function close(){
+//		invalidate scrollbar.slider;
+		phase=PReturn;
+	}
+
+	//--------------------------------------------------------------
+	//	Tick
+	//--------------------------------------------------------------
+	function tick(){
+		switch(phase){
+			case PNone:
+				return false;
+			case PStart:
+				if(timer+10<=System.getTickCount()){
+					timer=System.getTickCount();
+					if((layer.opacity+=16)>=255){
+						layer.opacity=255;
+						phase=PTick;
+					}
+				}
+				break;
+			case PTick:
+				break;
+			case PReturn:
+				if(timer+10<=System.getTickCount()){
+					timer=System.getTickCount();
+					if((layer.opacity-=16)<=0){
+						invalidate scrollbar.slider;
+						layer.opacity=0;
+						layer.visible=false;
+						releaseLayer();
+					;	invalidate layer;
+					;	invalidate items;
+						invalidate layerBgimage;
+						invalidate layerCursor;
+						invalidate layerMessage;
+						invalidate layerVoice;
+						phase=PNone;
+					}
+				}
+				break;
+		}
+		return true;
+	}
+
+	function isBusy(){
+		return phase!=PNone;
+	}
+
+	//--------------------------------------------------------------
+	//	ログ登録
+	//--------------------------------------------------------------
+	function clear(){
+		logs.clear();
+	}
+
+	function add(message,height,voice=void){
+
+		//	ログとメッセージウィンドウの幅が違うと改行位置が変り1ページの高さが変るのでここで計算してる
+//		var ms=new TMStrings(owner.primaryLayer);
+//		ms.setWindow(layout.message.x,layout.message.y,layout.message.width);
+//		ms.resetLocation();
+//		ms.setString(message);
+//		logs.add(%['message'=>message,'height'=>ms.totalHeight,'voice'=>voice]);
+		if (tScript.isNext()) height=84;	//NEXT時、バックログの文字が重なるのを急場しのぎの対応
+		logs.add(%['message'=>message,'height'=>height,'voice'=>voice]);
+		getLastPage();
+	}
+
+	function getLastPage(){
+		ly=logs.count-1;
+		var height=0;
+		for(var i=logs.count-1;i>=0;i--){
+			height+=logs[i].height;
+			if(height<=layout.message.height){
+				ly=i;
+				height+=layout.message.pitch;
+			}else{
+				break;
+			}
+		}
+	}
+
+}
+
+//==============================================================
+//	TLogLayer
+//==============================================================
+class TLogLayer extends Layer{
+
+	var owner;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TLogLayer(window,parent,owner){
+		super.Layer(window,parent);
+		this.owner=owner;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		super.finalize(...);
+	}
+
+	//--------------------------------------------------------------
+	//	Event
+	//--------------------------------------------------------------
+	function onClick(x,y){
+		owner.onClick(...);
+	}
+	function onMouseDown(x,y,button,shift){
+	}
+	function onMouseUp(x,y,button,shift){
+		if(button==mbRight){
+			owner.close();
+		}
+	}
+	function onMouseMove(x,y,shift){
+		owner.onMouseMove(...);
+	}
+}

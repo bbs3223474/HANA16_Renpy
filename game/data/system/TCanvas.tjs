@@ -1,0 +1,623 @@
+//==============================================================
+//	TCanvas
+//==============================================================
+Plugins.link("extrans.dll");
+
+class TCanvas{
+
+	var owner;
+	var wipe;
+	var layers;
+	var layerBack;
+	var layerFront;
+	var shakeTime,shakeTime2,shakeCount;
+
+	var	orderOffset=512;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TCanvas(owner){
+
+		this.owner=owner;
+
+		wipe=new Dictionary();
+		layers=new Dictionary();
+		shakeCount=0;
+		assignLayer();
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		delete wipe;
+		delete layers;
+	}
+
+	//--------------------------------------------------------------
+	//	初期化
+	//--------------------------------------------------------------
+	function initialize(){
+		tLocalData.initializeReserv();
+		tLocalData.initializeImage();
+		(Dictionary.clear incontextof layers)();
+		tCanvasBeta.resetLayer();	//★開幕レイヤ齟齬対策
+	}
+
+	function initializeWidthStatus(status){
+	}
+
+	//--------------------------------------------------------------
+	//	レイヤ登録
+	//--------------------------------------------------------------
+	function addLayer(layer){
+		if(layers[layer]===void){
+			var center=layer.substring(0,2)=="cg"?1:0;
+			layers[layer]=new TImage(layerBack,layer,center,center?orderOffset-+layer.substring(2):0);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	レイヤ再登録
+	//--------------------------------------------------------------
+	function resetLayer(){
+
+		//	現在のCGは消去
+		addReservClear("all");
+		addReservClear("bg");
+
+		//	存在するイメージを登録する
+		var temp=[];
+		temp.assign(tLocalData.data.image);
+		for(var i=0;i<temp.count;i+=2){
+			var layer=temp[i];
+			var param=temp[i+1];
+
+			if(param.visible){
+				//	登録
+				var filename=param.filename;
+				//dm(filename+","+param.color);
+				if(param.color){
+					filename="0x%08x".sprintf(param.color);
+				}
+				addReservSet(layer,filename,param.x,param.y,param.size,param.anime);
+				if(/^cg/.test(layer)){
+					//dm(orderOffset-param.order);
+					addReservOrder(layer,orderOffset-param.order);
+				}
+				addReservAlpha(layer,param.alpha);
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	レイヤ設定
+	//--------------------------------------------------------------
+	function assignLayer(){
+		if(owner.layer0.name=="back"){
+			layerBack=owner.layer0;
+			layerFront=owner.layer1;
+		}else{
+			layerBack=owner.layer1;
+			layerFront=owner.layer0;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	tick
+	//--------------------------------------------------------------
+	function tick(){
+		assignLayer();
+		if(wipe.mode==WipeHorizontalShutter||wipe.mode==WipeVerticalShutter){
+			if(!layerFront.transition){
+				if(++wipe.counter==0){
+					//	現在画面のキャプチャ
+					layerFront.piledCopy(0,0,layerFront,0,0,layerFront.width,layerFront.height);
+
+					//	黒レイヤ削除
+					if(layers.wipe!==void){
+						layers.wipe.destroyImage();
+						delete layers.wipe;
+					}
+
+					//	子レイヤをbackに移動
+					assignBackLayer();
+
+					//	tCanvasBetaをlayerBackにコピー
+					tCanvasBeta.render(layerBack);
+
+					var mask;
+					if(wipe.mode==WipeHorizontalShutter){
+						mask="mask_horizontalout";
+					}else{
+						mask="mask_verticalout";
+					}
+					layerFront.beginTransition("universal",true,layerBack,%["time"=>wipe.time,"rule"=>wipe.mode==WipeHorizontalShutter?"mask_horizontalout":"mask_verticalout"]);
+				}else{
+//					layerFront.fillRect(0,0,layerFront.width,layerFront.height,0xff000000);
+					wipe.mode=WipeNone;
+				}
+			}
+		}else if(wipe.mode>=WipeShake&&wipe.mode<=WipeShakeH2){
+			var time=System.getTickCount();
+			var interval=50*((wipe.mode>=WipeShake2&&wipe.mode<=WipeShakeH2)?2:1);
+			if(shakeTime+interval<=time){
+				shakeTime=time;
+				if(wipe.mode==WipeShake||wipe.mode==WipeShake2){
+					var vx=[-8, 8, 8,-8];
+					var vy=[-8, 8,-8, 8];
+					layerFront.left=vx[wipe.counter&3];
+					layerFront.top=vy[wipe.counter&3];
+				}else if(wipe.mode==WipeShakeV||wipe.mode==WipeShakeV2){
+					layerFront.top=8-(wipe.counter&1)*16;
+				}else if(wipe.mode==WipeShakeH||wipe.mode==WipeShakeH2){
+					layerFront.left=8-(wipe.counter&1)*16;
+				}
+				if(++wipe.counter>8){
+					layerFront.left=0;
+					layerFront.top=0;
+					wipe.mode=WipeNone;
+				}
+			}
+		}else if(wipe.mode!=WipeNone){
+			if(!layerFront.transition){
+//				layerFront.fillRect(0,0,layerFront.width,layerFront.height,0xff000000);
+				wipe.mode=WipeNone;
+			}
+		}
+
+		if(wipe.mode==WipeNone){
+//			var temp=[];
+//			temp.assign(layers);
+//			for(var i=0;i<temp.count;i+=2){
+//				temp[i+1].tick();
+//			}
+			tCanvasBeta.tick();
+		}
+
+		//	shake
+		var ss=tLocalData.getScriptShakeScreen();
+		var sm=tLocalData.getScriptShakeMessage();
+		var sc=tLocalData.getScriptShakeCG();
+
+		if(ss||sm||sc.find(true)!=-1){
+			var time=System.getTickCount();
+			if(shakeTime2+tLocalData.getScriptShakeInterval()<=time){
+				var v=tLocalData.getScriptShakeVirtical();
+				var h=tLocalData.getScriptShakeHorizontal();
+//				var vx=[-8, 8, 8,-8];
+				var vx=[-h, h, h,-h];
+//				var vy=[-8, 8,-8, 8];
+				var vy=[-v, v,-v, v];
+
+				if(ss){
+					if(v>0&&h>0){layerFront.top=vy[shakeCount];layerFront.left=vx[shakeCount];
+					}else if(v>0){layerFront.top=vy[shakeCount];
+					}else if(h>0){layerFront.left=vx[shakeCount];
+					}
+				}
+				else if(sc.find(true)!=-1){
+					for(var i=0;i<sc.count;i++){
+						if(sc[i]&&tCanvasBeta.layers["cg"+i]!==void){
+							tLocalData.data.layers["cg"+i].vy=vy[shakeCount];
+							tLocalData.data.layers["cg"+i].vx=vx[shakeCount];
+							tLocalData.data.layers["cg"+i].render=true;
+						}
+					}
+				}
+
+				if(sm){
+					if(v>0&&h>0){owner.layerMessage.top=vy[shakeCount];owner.layerMessage.left=vx[shakeCount];
+					}else if(v>0){owner.layerMessage.top=vy[shakeCount];
+					}else if(h>0){owner.layerMessage.left=vx[shakeCount];
+					}
+				}
+
+				shakeCount=(shakeCount+1)&3;
+				shakeTime2=time;
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	描画
+	//--------------------------------------------------------------
+	function render(){
+		if(wipe.mode==WipeNone){
+			tCanvasBeta.render(layerFront);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	黒で塗りつぶす
+	//--------------------------------------------------------------
+	function clear(){
+		layerFront.fillRect(0,0,layerFront.width,layerFront.height,0xff000000);
+	}
+
+	//--------------------------------------------------------------
+	//	処理の登録
+	//--------------------------------------------------------------
+//	function addReservSet(layer,name,x=0,y=0,size=void,anime=void){
+//		tLocalData.data.reserv.add(%["command"=>"set","id"=>layer,"name"=>name,"x"=>x,"y"=>y,"size"=>size,"anime"=>anime]);
+//	}
+
+//	function addReservPos(layer,x=0,y=0){
+//		tLocalData.data.reserv.add(%["command"=>"pos","layer"=>layer,"x"=>x,"y"=>y]);
+//	}
+
+//	function addReservAddPos(layer,x=0,y=0){
+//		tLocalData.data.reserv.add(%["command"=>"addpos","layer"=>layer,"x"=>x,"y"=>y]);
+//	}
+
+//	function addReservClear(layer){
+//		if(layer=="all"){
+//			var temp=[];
+//			temp.assign(layers);
+//			for(var i=0;i<temp.count;i+=2){
+//				if(temp[i].substring(0,2)=="cg"){
+//					addReservClear(temp[i]);
+//				}
+//			}
+//		}else{
+//			tLocalData.data.reserv.add(%["command"=>"clear","layer"=>layer]);
+//		}
+//	}
+
+//	function addReservAlpha(layer,alpha){
+//		tLocalData.data.reserv.add(%["command"=>"alpha","layer"=>layer,"alpha"=>alpha]);
+//	}
+
+//	function addReservPriority(priority){
+//		tLocalData.data.reserv.add(%["command"=>"priority","priority"=>priority]);
+//	}
+
+//	function addReservOrder(layer,order){
+//		tLocalData.data.reserv.add(%["command"=>"order","layer"=>layer,"order"=>order]);
+//	}
+
+//	function clearReserve(){
+//		tLocalData.data.reserv.clear();
+//	}
+
+	//--------------------------------------------------------------
+	//	wipe設定
+	//--------------------------------------------------------------
+	function setWipe(wipemode,mask=void,time=void){
+//		if(!(avg.globaldata.environment.effectMode&&!tGameSystem.isSkip())){
+		if(tGlobalData.data.environment.effectoff||tGameSystem.isSkip()){
+			wipemode=WipeFade;
+			time=0;
+		}
+		setWipe2(wipemode,mask,time);
+	}
+
+	function setWipe2(wipemode,mask=void,time=void){
+
+		if(tScript.isNext()){
+			//	「次の選択肢までスキップ」時の処理
+			tCanvasBeta.flashReserve();
+			return;
+		}
+
+		//	ワイプ停止
+		stopWipe();
+		assignLayer();
+
+		//	ステータス初期化
+		wipe.mode=wipemode;
+		wipe.counter=-1;
+
+		//	Shakeならowner.layerを黒に塗りつぶす
+		if(wipe.mode>=WipeShake&&wipe.mode<=WipeShakeH2){
+			owner.layer.fillRect(0,0,owner.layer.width,owner.layer.height,0xff000000);
+			shakeTime=System.getTickCount();
+			return;
+		}
+
+//		if(wipe.mode!=WipeFlash){
+			//	現在画面のキャプチャ
+//			layerFront.piledCopy(0,0,layerFront,0,0,layerFront.width,layerFront.height);
+
+			//	子レイヤをbackに移動
+//			assignBackLayer();
+//		}
+
+		//	予約してたコマンドを処理
+		tCanvasBeta.flashReserve();
+
+		//	tCanvasBetaをlayerBackにコピー
+		if(wipe.mode!=WipeHorizontalShutter&&wipe.mode!=WipeVerticalShutter){
+			tCanvasBeta.render(layerBack,true,true);
+		}
+
+		//	backの背景をprimaryLayerにコピー
+		//	universalトランジションでvagueが0以外のとき背景が透けるためbgをowner.layerにコピーする
+//		if(layers.bg!==void){
+////			tWindow.primaryLayer.copyRect(layers.bg.x,layers.bg.y,layers.bg.layer,0,0,tWindow.primaryLayer.width,tWindow.primaryLayer.height);
+			owner.layer.piledCopy(layerFront.left,layerFront.top,layerFront,0,0,owner.layer.width,owner.layer.height);
+//		}
+
+		//	ワイプ設定
+		if(time===void){
+			wipe.time=1000;
+		}else{
+			wipe.time=time;
+		}
+		if(wipe.mode==WipeFlash||wipe.mode==WipeFade){
+			if(wipe.mode==WipeFlash){
+				wipe.time=0;
+			}
+			layerFront.beginTransition("crossfade",true,layerBack,%["time"=>wipe.time]);
+		}else if(wipe.mode>=WipeBlindTop&&wipe.mode<=WipeMask){
+			var vague=void;
+			switch(wipe.mode){
+				case WipeBlindTop:			mask="mask_blindtop";break;
+				case WipeBlindBottom:		mask="mask_blindbottom";break;
+				case WipeBlindLeft:			mask="mask_blindleft";break;
+				case WipeBlindRight:		mask="mask_blindright";break;
+				case WipeTop:				mask="mask_top";break;
+				case WipeBottom:			mask="mask_bottom";break;
+				case WipeLeft:				mask="mask_left";break;
+				case WipeRight:				mask="mask_right";break;
+				case WipeLeftTop:			mask="mask_lefttop";break;
+				case WipeLeftBottom:		mask="mask_leftbottom";break;
+				case WipeHorizontalIn:		mask="mask_horizontalin";break;
+				case WipeHorizontalOut:		mask="mask_horizontalout";break;
+				case WipeVerticalIn:		mask="mask_verticalin";break;
+				case WipeVerticalOut:		mask="mask_verticalout";break;
+				case WipeBoxIn:				mask="mask_boxin";break;
+				case WipeBoxOut:			mask="mask_boxout";break;
+				case WipeCircleIn:			mask="mask_circlein";break;
+				case WipeCircleOut:			mask="mask_circleout";break;
+				case WipeRotateRight:		mask="mask_rotateright";break;
+				case WipeRotateLeft:		mask="mask_rotateleft";break;
+				case WipeHorizontalShutter:	mask="mask_horizontalin";if(time===void){wipe.time=200;};layers.wipe=new TImage(layerBack,"wipe",false,0x7fffffff);layers.wipe.loadImage("black");break;
+				case WipeVerticalShutter:	mask="mask_verticalin";if(time===void){wipe.time=200;};layers.wipe=new TImage(layerBack,"wipe",false,0x7fffffff);layers.wipe.loadImage("black");break;
+				case WipeMask:				break;
+			}
+			layerFront.beginTransition("universal",true,layerBack,%["time"=>wipe.time,"rule"=>mask,"vague"=>vague]);
+		}else if(wipe.mode>=WipeSlideInTop&&wipe.mode<=WipePushRight){
+			var from,stay;
+			switch(wipe.mode){
+				case WipeSlideInTop:		from=sttTop;stay=ststStayDest;break;
+				case WipeSlideInBottom:		from=sttBottom;stay=ststStayDest;break;
+				case WipeSlideInLeft:		from=sttLeft;stay=ststStayDest;break;
+				case WipeSlideInRight:		from=sttRight;stay=ststStayDest;break;
+				case WipeSlideOutTop:		from=sttTop;stay=ststStaySrc;break;
+				case WipeSlideOutBottom:	from=sttBottom;stay=ststStaySrc;break;
+				case WipeSlideOutLeft:		from=sttLeft;stay=ststStaySrc;break;
+				case WipeSlideOutRight:		from=sttRight;stay=ststStaySrc;break;
+				case WipePushTop:			from=sttTop;stay=ststNoStay;break;
+				case WipePushBottom:		from=sttBottom;stay=ststNoStay;break;
+				case WipePushLeft:			from=sttLeft;stay=ststNoStay;break;
+				case WipePushRight:			from=sttRight;stay=ststNoStay;break;
+			}
+			layerFront.beginTransition("scroll",true,layerBack,%["time"=>wipe.time,"from"=>from,"stay"=>stay]);
+		}else if(wipe.mode>=WipePressIn&&wipe.mode<=WipeRotateZoomOutRight){
+			var name,factor,twist;
+			switch(wipe.mode){
+				case WipePressIn:				name="rotatezoom";factor=0;twist=0;break;
+				case WipePressOut:				name="rotatevanish";factor=void;twist=0;break;
+				case WipeZoomIn:				name="rotatezoom";factor=64;twist=0;break;
+				case WipeZoomOut:				name="rotatevanish";factor=void;twist=0;break;
+				case WipeRotateZoomInLeft:		name="rotatezoom";factor=0;twist=2;break;
+				case WipeRotateZoomInRight:		name="rotatezoom";factor=0;twist=-2;break;
+				case WipeRotateZoomOutLeft:		name="rotatevanish";factor=void;twist=2;break;
+				case WipeRotateZoomOutRight:	name="rotatevanish";factor=void;twist=-2;break;
+			}
+			layerFront.beginTransition(name,true,layerBack,%["time"=>wipe.time,"factor"=>factor,"twist"=>twist]);
+		}
+	}
+
+	function stopWipe(){
+		//	back,frontレイヤ設定
+		assignLayer();
+
+		//	トランジションを止める
+		if(layerFront.transition){
+			layerFront.stopTransition();
+		}
+
+		//	ワイプ用のレイヤを削除
+		if(layers.wipe!==void){
+			layers.wipe.destroyImage();
+			delete layers.wipe;
+		}
+
+		if(wipe.mode>=WipeShake&&wipe.mode<=WipeShakeH2){
+			layerFront.top=0;
+			layerFront.left=0;
+			owner.layerMessage.top=0;
+			owner.layerMessage.left=0;
+		}
+
+		wipe.mode=WipeNone;
+	}
+
+	function isWipe(){
+		return	wipe.mode==WipeNone?false:true;
+	}
+	function isWipe2(){
+		return	(tSaveLoad.phase==tSaveLoad.PStart||tSaveLoad.phase==tSaveLoad.PReturn)
+				||(tConfig.phase==tConfig.PStart||tConfig.phase==tConfig.PReturn)
+				||(tExScene.phase==tExScene.PStart||tExScene.phase==tExScene.PReturn)
+				||(tExCG.phase==tExCG.PStart||tExCG.phase==tExCG.PReturn)
+				||(tExBGM.phase==tExBGM.PStart||tExBGM.phase==tExBGM.PReturn)
+				||(tTitle.phase==tTitle.PStart||tTitle.phase==tTitle.PStartScript);
+	}
+
+	function assignBackLayer(){
+		//	子レイヤをbackに移動
+		var temp=[];
+		temp.assign(layers);
+		for(var i=0;i<temp.count;i+=2){
+			temp[i+1].changeParent(layerBack);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	move設定
+	//--------------------------------------------------------------
+	function setMove(layer,x,y,time){
+		if(layers[layer]!==void){
+			layers[layer].setMove(x,y,time);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	alpha設定
+	//--------------------------------------------------------------
+	function setAlpha(layer,start,end,time=1000){
+		if(layers[layer]!==void){
+			layers[layer].setAlpha(start,end,time);
+			//dm(start+","+end+","+time);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	zoom設定
+	//--------------------------------------------------------------
+	function setZoom(layer,start,end,time=1000){
+		if(layers[layer]!==void){
+			layers[layer].setZoom(start,end,time);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	アニメ設定
+	//--------------------------------------------------------------
+	function setAnime(layer,pattern){
+		if(layers[layer]!==void&&pattern!==void){
+			layers[layer].setAnime(pattern);
+		}
+	}
+
+	function stopAnime(layer){
+		if(layers[layer]!==void){
+			layers[layer].stopAnime();
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	アニメ中か
+	//--------------------------------------------------------------
+	function isAnime(layer,type){
+		if(layer=="all"){
+			var temp=[];
+			temp.assign(layers);
+			for(var i=0;i<temp.count;i+=2){
+				if(isAnime(temp[i],type)){
+					return true;
+				}
+			}
+		}else if(layers[layer]!==void){
+			if(type=="move"){
+				return layers[layer].isMove();
+			}else if(type=="alpha"){
+				return layers[layer].isAlpha();
+			}else if(type=="zoom"){
+				return layers[layer].isZoom();
+			}else if(type=="anime"){
+				return layers[layer].isMove()||layers[layer].isAlpha()||layers[layer].isZoom();
+			}
+		}
+		return false;
+	}
+
+	function cancelAnime(layer){
+		if(layer=="all"){
+			var temp=[];
+			temp.assign(layers);
+			for(var i=0;i<temp.count;i+=2){
+				cancelAnime(temp[i]);
+			}
+		}else if(layers[layer]!==void){
+			layers[layer].cancelAnime();
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	振動設定
+	//--------------------------------------------------------------
+//	function setShake(screen=true,message=true,virtical=true,horizontal=true,interval=100){
+	function setShake(screen=true,message=true,virtical=8,horizontal=8,interval=100,layer=void){
+		resetShakeCG();
+		owner.layer.fillRect(0,0,owner.layer.width,owner.layer.height,0xff000000);
+		tLocalData.setScriptShakeScreen(screen);
+		tLocalData.setScriptShakeMessage(message);
+		tLocalData.setScriptShakeInterval(interval);
+		tLocalData.setScriptShakeVirtical(virtical);
+		tLocalData.setScriptShakeHorizontal(horizontal);
+		if(layer!==void) tLocalData.setScriptShakeCG(layer,true);
+		shakeTime2=System.getTickCount();
+	}
+
+	function stopShakeScreen(){
+		tLocalData.setScriptShakeScreen(false);
+		layerFront.top=0;
+		layerFront.left=0;
+	}
+
+	function stopShakeMessage(){
+		tLocalData.setScriptShakeMessage(false);
+		owner.layerMessage.top=0;
+		owner.layerMessage.left=0;
+	}
+
+	function resetShakeCG(){
+		for(var i=0;i<tLocalData.data.script.shake.cg.count;i++){
+			if(typeof tLocalData.data.script.shake.cg[i]!="undefined"&&tLocalData.data.script.shake.cg[i]){
+				tLocalData.data.layers['cg'+i].vy=0;
+				tLocalData.data.layers['cg'+i].vx=0;
+				tLocalData.data.layers['cg'+i].render=true;
+			}
+		}
+	}
+
+	function stopShakeCG(layer){
+		tLocalData.setScriptShakeCG(layer,false);
+		//ここに初期化の設定
+		if (layer=='all'){
+			resetShakeCG();
+		}else{
+			tLocalData.data.layers[layer].vy=0;
+			tLocalData.data.layers[layer].vx=0;
+			tLocalData.data.layers[layer].render=true;
+//			tLocalData.setScriptShakeCG(layer,false);
+		}
+	}
+}
+
+//==============================================================
+//	AvgLayer
+//==============================================================
+class AvgLayer extends TLayer{
+	var transition;
+
+	function AvgLayer(window,parent,name){
+		this.name=name;
+		transition=false;
+        super.Layer(window,parent);
+    }
+
+    function beginTransition(name,withchildren=true,transsrc=null,options=%[ ]){
+		transition=true;
+        super.beginTransition(...);
+	}
+
+	function stopTransition(){
+		transition=false;
+		super.stopTransition();
+	}
+
+	function onTransitionCompleted(dest,src){
+		var name=src.name;
+		src.name=dest.name;
+		dest.name=name;
+		transition=false;
+//		hasImage=false;											//	Image破棄
+//		hasImage=true;
+	}
+}

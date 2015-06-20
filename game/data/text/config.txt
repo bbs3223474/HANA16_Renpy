@@ -1,0 +1,104 @@
+//	コンフィグ画面設定
+
+//	背景
+//		ページ毎の背景
+//		page	image				x y
+image:	system	system	0 0
+
+//	ボタン
+//		page:
+//			all		全てのページで表示される
+//			system	システム設定画面で表示される
+//			sound	サウンド設定画面で表示される
+//		tag:
+//			system				システム設定画面に切り替え
+//			sound				サウンド設定画面に切り替え
+//			fullscreen:false	ウィンドウモード
+//			fullscreen:true		フルスクリーンモード
+//			movieoff:false		ムービーを再生する
+//			movieoff:true		ムービーを再生しない
+//			effectoff:fasle		画面効果を実行する
+//			effectoff:true		画面効果を実行しない
+//			skipoff:false		選択後のスキップを継続する
+//			skipoff:true		選択後のスキップを停止する
+//			autooff:false		選択後のオートを継続する
+//			autooff:true		選択後のオートを停止する
+//			kidokuoff:false		既読メッセージのみスキップ
+//			kidokuoff:true		全てのメッセージをスキップ
+//			righthide			右クリックをウィンドウ消去にする
+//			rightlog			右クリックをログ表示にする
+//			rightconfig			右クリックをコンフィグ表示にする
+//			systemreset			初期設定に戻す(system)
+//			systemreturn		Config終了
+//
+//			messagespeed		メッセージ速度の変更
+//			autospeed			オートモードの速度変更
+//
+//			voiceoff_aaa:false	aaaから始まる音声ファイルを再生する(#voiceコマンド)
+//			voiceoff_aaa:true	aaaから始まる音声ファイルを再生しない(#voiceコマンド)
+//								ここで未設定のファイルは(初期値がfalseの為)再生される
+//			voicecut:false		文章送り時に音声を継続
+//			voicecut:true		文章送り時に音声を停止
+//			soundreset			初期設定に戻す(sound)
+//			soundreturn			Config終了
+//
+//			mastervolume		マスター音量
+//			bgmvolume			BGM音量
+//			sevolume			SE音量
+//			voicevolume			Voice音量
+//
+//		image:
+//			ボタン画像
+//		baseimage:
+//			スライダのベース画像
+//		pinimage:
+//			スライダのつまみ画像
+//		x,y:
+//			表示座標
+//		cursor:
+//			マウスオーバー時のカーソル形状
+//			voidを指定するとsetting.txtで指定したデフォルトのまま変更しない
+
+//		page	tag					image				x	y	cursor
+button:	system	fullscreen:false	system_p_window		70	110	void
+button:	system	fullscreen:true		system_p_full		210	110	void
+button:	system	kidokuoff:false		system_p_kidoku		70	170	void
+button:	system	kidokuoff:true		system_p_all		210	170	void
+button:	system	skipoff:false		system_p_on			530	110	void
+button:	system	skipoff:true		system_p_off		600	110	void
+button:	system	voicecut:false		system_p_on			530	170	void
+button:	system	voicecut:true		system_p_off		600	170	void
+button:	system	effectoff:false		system_p_on			530	230	void
+button:	system	effectoff:true		system_p_off		600	230	void
+button:	system	movieoff:false		system_p_on			530	290	void
+button:	system	movieoff:true		system_p_off		600	290	void
+
+button:	system	systemreturn		system_p_ok			620	520	void
+
+//		page	tag				baseimage			pinimage			  x	  y	cursor
+slider:	system	autospeed		system_p_slider		system_p_pin		 60 250	void
+slider:	system	messagespeed	system_p_slider		system_p_pin		 60 310	void
+
+//		page	tag				image			  x	  y	overSE	downSE	cursor
+button:	system	voiceoff_rik	system_p_C01on	430	350	void	void	void	system_p_C01off
+button:	system	voiceoff_say	system_p_C02on	510	350	void	void	void	system_p_C02off
+button:	system	voiceoff_yuu	system_p_C03on	590	350	void	void	void	system_p_C03off
+button:	system	voiceoff_nan	system_p_C04on	670	350	void	void	void	system_p_C04off
+button:	system	voiceoff_kae	system_p_C05on	430	390	void	void	void	system_p_C05off
+button:	system	voiceoff_sar	system_p_C06on	510	390	void	void	void	system_p_C06off
+button:	system	voiceoff_mai	system_p_C07on	590	390	void	void	void	system_p_C07off
+button:	system	voiceoff_reo	system_p_C08on	670	390	void	void	void	system_p_C08off
+button:	system	voiceoff_miy	system_p_C09on	430	430	void	void	void	system_p_C09off
+button:	system	voiceoff_ris	system_p_C10on	510	430	void	void	void	system_p_C10off
+button:	system	voiceoff_eri	system_p_C11on	590	430	void	void	void	system_p_C11off
+button:	system	voiceoff_siz	system_p_C12on	670	430	void	void	void	system_p_C12off
+button:	system	voiceoff_run	system_p_C13on	430	470	void	void	void	system_p_C13off
+button:	system	voiceoff_tak	system_p_C14on	510	470	void	void	void	system_p_C14off
+button:	system	voiceoff_ren	system_p_C15on	590	470	void	void	void	system_p_C15off
+button:	system	voiceoff_mob	system_p_C16on	670	470	void	void	void	system_p_C16off
+//button:	system	voiceoff_mob	system_p_C07on	590	390	void	void	void	system_p_C07off
+
+//		page	tag				baseimage			pinimage			  x	  y	cursor
+slider:	system	bgmvolume		system_p_slider		system_p_pin		 60 370	void
+slider:	system	sevolume		system_p_slider		system_p_pin		 60 430	void
+slider:	system	voicevolume		system_p_slider		system_p_pin		 60 490	void

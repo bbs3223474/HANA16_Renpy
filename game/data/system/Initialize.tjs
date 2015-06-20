@@ -1,0 +1,171 @@
+//	version
+var avgVersion="0.00";
+
+if(System.versionString!="2.11.19.13"){
+	System.exit();
+}
+
+//	KAGにあったので入れてみる
+//	デフォルトの「捕捉されない例外」ハンドラ
+System.exceptionHandler=function (e){
+	// どこにも捕捉されない例外がシステム側で捕捉された場合、この関数が
+	// 呼ばれる。e は例外オブジェクト。
+	if(e instanceof "ConductorException"){
+		// コンダクタの投げた例外の場合
+		Debug.logAsError(); // ログのファイルへの書き出し動作の開始など
+		var event_disabled=System.eventDisabled;
+		System.eventDisabled=true;
+			// エラーの理由を表示させている間にイベントが発生すると
+			// やっかいなのでいったんイベント発生を停止させる
+		System.inform(e.message);
+		System.eventDisabled=event_disabled;
+			// イベントを発生するかどうかを元の状態に
+		return true; // true を返すと本体側で例外の処理は行わなくなる
+	}else{
+		return false; // false を返すと通常の例外処理
+	}
+};
+
+
+//	パスの設定
+//	後に指定した物が、より優先されて使用される
+function useArchiveIfExists(name)
+{
+	// name が存在していたらそのアーカイブを使う
+	var arcname;
+	if(Storages.isExistentStorage(arcname=System.exePath+name))
+		Storages.addAutoPath(arcname+">");
+}
+
+Storages.addAutoPath("emotion/");
+Storages.addAutoPath("voice/");
+Storages.addAutoPath("bgvoice/");
+Storages.addAutoPath("plugin/");
+Storages.addAutoPath("cursor/");
+Storages.addAutoPath("mask/");
+Storages.addAutoPath("image/");
+Storages.addAutoPath("bg/");
+Storages.addAutoPath("cg/");
+Storages.addAutoPath("thumbnail/");
+Storages.addAutoPath("bgm/");
+Storages.addAutoPath("sound/");
+Storages.addAutoPath("script/");
+Storages.addAutoPath("system/");
+Storages.addAutoPath("text/");
+
+//    各フォルダごとにパックした時用のパスを追加
+useArchiveIfExists("bg.xp3");
+useArchiveIfExists("image.xp3");
+useArchiveIfExists("sound.xp3");
+useArchiveIfExists("script.xp3");
+useArchiveIfExists("voice.xp3");
+
+//	パッチアーカイブの検索と使用
+//	もしこれらの名前を持ったアーカイブが実行可能ファイルと
+//	同じ場所にあった場合、それを優先して使う
+useArchiveIfExists("patch.xp3");
+
+//	追加のパッチ用アーカイブの検索
+for(var i=2;;i++){
+	// パッチ用アーカイブ patch2.xp3, patch3.xp3 ... がある場合はそちらを
+	// 優先して読み込むように
+	if(Storages.isExistentStorage(System.exePath+"patch"+i+".xp3")){
+		Storages.addAutoPath(System.exePath+"patch"+i+".xp3>");
+	}else{
+		break;
+	}
+}
+
+delete useArchiveIfExists; // useArchiveIfExists は使い終わったので一応消しておく
+
+
+//	システムバージョン
+Debug.notice("OS : "+System.osName+" ("+System.platformName+")");
+Debug.notice("AVG : "+avgVersion);
+Debug.notice("Kirikiri : "+System.versionString);
+
+
+//	TDebug
+Scripts.execStorage("TDebug.tjs");
+
+
+//	設定ファイル読み込み
+Scripts.execStorage("define.tjs");
+Scripts.execStorage("TSettings.tjs");
+var tSettings=new TSettings();
+
+//	タイトル設定
+System.title=tSettings.title;
+
+
+//	二重起動のチェック
+//	実行可能ファイルのパスをキーにしてロックを行う
+if(!System.createAppLock(System.exePath.replace(/[^A-Za-z]/g,'_'))){
+	//	すでに起動している
+	System.inform(System.title+"はすでに起動しています");
+	System.exit();
+}
+
+
+//	クラス読み込み
+Scripts.execStorage("TButton.tjs");
+Scripts.execStorage("TCanvas.tjs");
+Scripts.execStorage("TCanvasBeta.tjs");
+Scripts.execStorage("TConfig.tjs");
+Scripts.execStorage("TData.tjs");
+Scripts.execStorage("TEffect.tjs");
+Scripts.execStorage("TExBGM.tjs");
+Scripts.execStorage("TExCG.tjs");
+Scripts.execStorage("TExScene.tjs");
+Scripts.execStorage("TFunction.tjs");
+Scripts.execStorage("TGameSystem.tjs");
+Scripts.execStorage("TImage.tjs");
+Scripts.execStorage("TImageBeta.tjs");
+Scripts.execStorage("TLayer.tjs");
+Scripts.execStorage("TLog.tjs");
+Scripts.execStorage("TMain.tjs");
+Scripts.execStorage("TMap.tjs");
+Scripts.execStorage("TMessage.tjs");
+Scripts.execStorage("TMovie.tjs");
+Scripts.execStorage("TSaveLoad.tjs");
+Scripts.execStorage("TScript.tjs");
+Scripts.execStorage("TSelect.tjs");
+Scripts.execStorage("TSound.tjs");
+Scripts.execStorage("TTitle.tjs");
+Scripts.execStorage("TWindow.tjs");
+Scripts.execStorage("TYesNoDialog.tjs");
+
+
+var tGlobalData=new TGlobalData();
+tGlobalData.load();//	グローバルデータ読み込み
+var tWindow=new TWindow();
+var tLocalData=new TLocalData();
+
+var tConfig=new TConfig(tWindow);
+var tEffect=new TEffect(tWindow);
+var tExBGM=new TExBGM(tWindow);
+var tExCG=new TExCG(tWindow);
+var tExScene=new TExScene(tWindow);
+var tGameSystem=new TGameSystem(tWindow);
+var tLog=new TLog(tWindow);
+var tCanvas=new TCanvas(tWindow);
+var tCanvasBeta=new TCanvasBeta(tWindow);
+var tMap=new TMap(tWindow);
+var tMessage=new TMessage(tWindow);
+var tMovie=new TMovie();
+var tSaveLoad=new TSaveLoad(tWindow);
+var tScript=new TScript();
+var tSelect=new TSelect(tWindow);
+var tSound=new TSound(tWindow);
+var tTitle=new TTitle(tWindow);
+
+//★強制フルスクリーン処理（ゲーム解像度がディスプレイ解像度を下回っていた場合、インフォメーションを表示する）
+if((System.screenWidth<tSettings.canvasWidth||System.screenHeight<tSettings.canvasHeight)&&!tGlobalData.data.environment.fullscreen){
+	System.inform("ディスプレイ解像度が不足しています\n[Alt]+[Enter]でフルスクリーンモードをお試しください");
+}
+
+//	メイン
+var tMain=new TMain();
+
+//	コンソール表示
+if(isDebug())Debug.console.visible=true;

@@ -1,0 +1,370 @@
+//==============================================================
+//	TMap
+//==============================================================
+class TMap{
+
+	var PhaseNone=0,PhaseTick=1,PhaseClose=2;
+	var DefaultFontSize=24;
+
+	var owner;
+	var layer;
+	var map;
+	var items;
+	var strings;
+	var phase;
+	var pause;
+	var visible;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TMap(owner){
+		this.owner=owner;
+		phase=PhaseNone;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+	}
+
+	//--------------------------------------------------------------
+	//	初期化
+	//--------------------------------------------------------------
+	function initialize(){
+		if(tLocalData.data.script.map!==void){
+			invalidate tLocalData.data.script.map;
+		}
+		tLocalData.data.script.map=new Dictionary();
+		tLocalData.data.script.map.items=new Array();
+		tLocalData.data.script.map.view=new Dictionary();
+		tLocalData.data.script.map.bg=void;
+		tLocalData.data.script.map.window=new Dictionary();
+		if(layer!==void){
+			invalidate layer;
+			layer=void;
+		}
+		visible=false;
+		pause=false;
+		tLocalData.data.script.map.window.x=-1;
+		phase=PhaseTick;
+	}
+
+	//--------------------------------------------------------------
+	//	表示
+	//--------------------------------------------------------------
+	function show(){
+		visible=true;
+	}
+
+	function hide(){
+		if(tLocalData.data.script.map!==void){
+			for(var i=0;i<tLocalData.data.script.map.items.count;i++){
+				if (isvalid(tLocalData.data.script.map.items[i]) && tLocalData.data.script.map.items[i]!==void) {
+					invalidate tLocalData.data.script.map.items[i].button;
+				}
+			}
+			invalidate tLocalData.data.script.map;
+			tLocalData.data.script.map=void;
+		}
+		if(layer!==void){
+			invalidate layer;
+			layer=void;
+		}
+		visible=false;
+		phase=PhaseNone;
+	}
+
+	//--------------------------------------------------------------
+	//	開始
+	//--------------------------------------------------------------
+	function start(){
+
+		//	skip、auto off
+//		tGameSystem.setSkip(false);
+//		tGameSystem.setAuto(false);
+
+		if(tLocalData.data.script.map.bg!==void){
+			tCanvasBeta.addReservSet("bg",tLocalData.data.script.map.bg,0,0);
+		}
+
+		if(tLocalData.data.script.map.startWipe!==void){
+			tCanvas.setWipe(tLocalData.data.script.map.startWipe.mode,tLocalData.data.script.map.startWipe.mask,tLocalData.data.script.map.startWipe.time);
+		}else{
+			tCanvas.setWipe(WipeFade);
+		}
+
+		for(var i=0;i<tLocalData.data.script.map.items.count;i++){
+			if(tLocalData.data.script.map.items[i]!==void){
+				var temp=new TButton(owner,tCanvas.layerBack,event,i);
+				temp.setImage(tLocalData.data.script.map.items[i].x,tLocalData.data.script.map.items[i].y,tLocalData.data.script.map.items[i].image);
+				var x=tLocalData.data.script.map.items[i].x;
+				var y=tLocalData.data.script.map.items[i].y;
+				if(tSettings.screenCenter){
+					//	座標系が画面中央の場合は座標修正
+					x+=tWindow.layer0.width/2;
+					y+=tWindow.layer0.height/2;
+					temp.setImage(x,y,tLocalData.data.script.map.items[i].image,true,true);
+				}else{
+					temp.setImage(x,y,tLocalData.data.script.map.items[i].image,false,false);
+				}
+//				temp.setImage(x,y,tLocalData.data.script.map.items[i].image,true,true);
+				temp.setCursor((tLocalData.data.script.map.items[i].cursor===void||tLocalData.data.script.map.items[i].cursor=="void")?tSettings.cursorDefaultMap:tLocalData.data.script.map.items[i].cursor);
+				temp.setVisible(true);
+				temp.setWipeDisabled(tCanvas.isWipe);
+				temp.enterEvent=true;
+				var overSE=tLocalData.data.script.map.items[i].overSE;
+				var downSE=tLocalData.data.script.map.items[i].downSE;
+				if(overSE=="off"){temp.buttonStatus.overSE=void;}else if(overSE!="void"&&overSE!==void){temp.buttonStatus.overSE=overSE;}
+				if(downSE=="off"){temp.buttonStatus.downSE=void;}else if(downSE!="void"&&downSE!==void){temp.buttonStatus.downSE=downSE;}
+				tLocalData.data.script.map.items[i].button=temp;
+			}
+		}
+
+		if(tLocalData.data.script.map.window.x!=-1){
+			layer=new TxLayer(owner,tCanvas.layerBack);
+			layer.type=ltAlpha;
+			layer.setPos(0,0,tCanvas.layerBack.width,tCanvas.layerBack.height);
+			layer.visible=true;
+			//フォント設定
+			layer.font.face=tGlobalData.data.environment.fontFace;
+			layer.font.bold=tGlobalData.data.environment.fontBold;
+		}
+
+		show();
+	}
+
+	function restart(){
+
+//		if(tLocalData.data.script.map.bg!==void){
+//			tCanvas.addReservSet("bg",tLocalData.data.script.map.bg,0,0);
+//		}
+
+		for(var i=0;i<tLocalData.data.script.map.items.count;i++){
+			if(tLocalData.data.script.map.items[i]!==void){
+				var temp;
+				if(tLocalData.data.script.map.items[i].button!==void){
+					temp=tLocalData.data.script.map.items[i].button;
+				}else{
+					temp=new TButton(owner,tCanvas.layerFront,event,i);
+				}
+				if(temp.filename!=tLocalData.data.script.map.items[i].image){
+					temp.setImage(tLocalData.data.script.map.items[i].x,tLocalData.data.script.map.items[i].y,tLocalData.data.script.map.items[i].image);
+					var x=tLocalData.data.script.map.items[i].x;
+					var y=tLocalData.data.script.map.items[i].y;
+					if(tSettings.screenCenter){
+						//	座標系が画面中央の場合は座標修正
+						x+=tWindow.layer0.width/2;
+						y+=tWindow.layer0.height/2;
+					}
+					temp.setImage(x,y,tLocalData.data.script.map.items[i].image,true,true);
+					temp.setCursor((tLocalData.data.script.map.items[i].cursor===void||tLocalData.data.script.map.items[i].cursor=="void")?tSettings.cursorDefaultMap:tLocalData.data.script.map.items[i].cursor);
+					temp.setVisible(true);
+					temp.setWipeDisabled(tCanvas.isWipe);
+					temp.enterEvent=true;
+					var overSE=tLocalData.data.script.map.items[i].overSE;
+					var downSE=tLocalData.data.script.map.items[i].downSE;
+					if(overSE=="off"){temp.buttonStatus.overSE=void;}else if(overSE!="void"&&overSE!==void){temp.buttonStatus.overSE=overSE;}
+					if(downSE=="off"){temp.buttonStatus.downSE=void;}else if(downSE!="void"&&downSE!==void){temp.buttonStatus.downSE=downSE;}
+					tLocalData.data.script.map.items[i].button=temp;
+				}
+			}
+		}
+
+//		tCanvas.setWipe(WipeFlash);
+		pause=false;
+	}
+
+	//--------------------------------------------------------------
+	//	event
+	//--------------------------------------------------------------
+	function event(param){
+
+		if(phase!=PhaseTick||tCanvas.isWipe()){
+			return;
+		}
+
+		if(param.click==1){
+
+			if(tLocalData.data.script.map.items[param.tag].type=="save"){
+				tSaveLoad.startSave();
+			}else if(tLocalData.data.script.map.items[param.tag].type=="qsave"){
+				tLocalData.quickSave();
+			}else if(tLocalData.data.script.map.items[param.tag].type=="load"){
+				tSaveLoad.startLoad();
+			}else if(tLocalData.data.script.map.items[param.tag].type=="qload"){
+				tLocalData.quickLoad();
+			}else if(tLocalData.data.script.map.items[param.tag].type=="system"){
+				tConfig.start();
+			}else{
+				tLocalData.setLocal(0,param.tag);
+				if(tLocalData.data.script.map.items[param.tag].mapend==1){
+					//	ボタンを押して終了する場合
+					if(tLocalData.data.script.map.endbg!==void){
+						tCanvasBeta.addReservSet("bg",tLocalData.data.script.map.endbg,0,0);
+						if(tLocalData.data.script.map.endWipe!==void){
+							tCanvas.setWipe(tLocalData.data.script.map.endWipe.mode,tLocalData.data.script.map.endWipe.mask,tLocalData.data.script.map.endWipe.time);
+						}else{
+							tCanvas.setWipe(WipeFade);
+						}
+					}
+					phase=PhaseClose;
+				}else{
+					//	ボタンを押しても終了しない場合
+					pause=true;
+				}
+			}
+		}else{
+			if(param.enter){
+				if(tLocalData.data.script.map.window.width===void){
+					//	互換モード
+					//	キャプション表示
+					layer.font.height=tLocalData.data.script.map.window.size;
+					layer.font.color=tLocalData.data.script.map.window.color;
+					layer.drawText(tLocalData.data.script.map.window.x,tLocalData.data.script.map.window.y,tLocalData.data.script.map.items[param.tag].caption===void?"":tLocalData.data.script.map.items[param.tag].caption,tLocalData.data.script.map.window.color,255,true,255,0,1,1,1);
+				}else{
+					//	キャプション表示
+					var ms=new TMStrings(layer);
+					ms.setWindow(tLocalData.data.script.map.window.x,tLocalData.data.script.map.window.y,tLocalData.data.script.map.window.width);
+					ms.resetLocation();
+					ms.setString(tLocalData.data.script.map.items[param.tag].caption===void?"":tLocalData.data.script.map.items[param.tag].caption);
+					ms.putCharacter(true);
+					invalidate ms;
+					//	アイテム表示
+					if(tLocalData.data.script.map.items[param.tag].layer!==void){
+						tLocalData.data.script.map.items[param.tag].layer.visible=true;
+					}
+				}
+			}else{
+				//	キャプション消去
+				if(layer!==void){
+					layer.fillRect(0,0,layer.width,layer.height,0);
+				}
+
+				//	アイテム消去
+				for(var i=0;i<tLocalData.data.script.map.items.count;i++){
+					if(tLocalData.data.script.map.items[i]!==void){
+						if(tLocalData.data.script.map.items[param.tag].layer!==void){
+							tLocalData.data.script.map.items[param.tag].layer.visible=false;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	登録
+	//--------------------------------------------------------------
+	function setBG(image){
+		tLocalData.data.script.map.bg=image;
+	}
+
+	function setEndBG(image){
+		tLocalData.data.script.map.endbg=image;
+	}
+
+//	function setItem(index,image,x,y,mapend,caption){
+	function setItem(index,image,x,y,mapend,caption,type='normal'){
+		if(tLocalData.data.script.map.items[index]===void){
+			tLocalData.data.script.map.items[index]=new Dictionary();
+		}
+		tLocalData.data.script.map.items[index].image=image;
+		tLocalData.data.script.map.items[index].x=x;
+		tLocalData.data.script.map.items[index].y=y;
+		tLocalData.data.script.map.items[index].mapend=mapend;
+		tLocalData.data.script.map.items[index].caption=caption;
+		tLocalData.data.script.map.items[index].type=type;
+//		invalidate tLocalData.data.script.map.items[index].button;
+//		tLocalData.data.script.map.items[index].button=void;
+	}
+
+	function setImage(index,image,x,y,caption){
+		if(tLocalData.data.script.map.items[index]===void){
+			tLocalData.data.script.map.items[index]=new Dictionary();
+		}
+		var temp=new TxLayer(owner,pause?tCanvas.layerFront:tCanvas.layerBack);
+		temp.loadImages(image);
+		temp.setSizeToImageSize();
+		if(tSettings.screenCenter){
+			//	座標系が画面中央の場合は座標修正
+			x+=(tWindow.layer0.width-temp.width)/2;
+			y+=(tWindow.layer0.height-temp.height)/2;
+		}
+		temp.setPos(x,y);
+		tLocalData.data.script.map.items[index].layer=temp;
+	}
+
+	function setSound(index,overSE,downSE){
+		tLocalData.data.script.map.items[index].overSE=overSE;
+		tLocalData.data.script.map.items[index].downSE=downSE;
+	}
+
+	function setCursor(index,cursor){
+		if(tLocalData.data.script.map.items[index]===void){
+			tLocalData.data.script.map.items[index]=new Dictionary();
+		}
+		tLocalData.data.script.map.items[index].cursor=cursor;
+	}
+
+	function setWindowCompatibility(x,y,c){
+		tLocalData.data.script.map.window.x=x;
+		tLocalData.data.script.map.window.y=y;
+		tLocalData.data.script.map.window.color=c;
+		tLocalData.data.script.map.window.size=DefaultFontSize;
+	}
+
+	function setWindow(x,y,w){
+		tLocalData.data.script.map.window.x=x;
+		tLocalData.data.script.map.window.y=y;
+		tLocalData.data.script.map.window.width=w;
+		tLocalData.data.script.map.window.color=0xffffffff;
+		tLocalData.data.script.map.window.size=DefaultFontSize;
+	}
+
+	function setStartWipe(mode,mask=void,time=void){
+		if(tLocalData.data.script.map.startWipe===void){
+			tLocalData.data.script.map.startWipe=new Dictionary();
+		}
+		tLocalData.data.script.map.startWipe.mode=mode;
+		tLocalData.data.script.map.startWipe.mask=mask;
+		tLocalData.data.script.map.startWipe.time=time;
+	}
+
+	function setEndWipe(mode,mask=void,time=void){
+		if(tLocalData.data.script.map.endWipe===void){
+			tLocalData.data.script.map.endWipe=new Dictionary();
+		}
+		tLocalData.data.script.map.endWipe.mode=mode;
+		tLocalData.data.script.map.endWipe.mask=mask;
+		tLocalData.data.script.map.endWipe.time=time;
+	}
+
+	//--------------------------------------------------------------
+	//	tick
+	//--------------------------------------------------------------
+	function tick(){
+		switch(phase){
+			case PhaseNone:
+				return false;
+
+			case PhaseTick:
+				break;
+
+			case PhaseClose:
+				if(!tCanvas.isWipe()){
+					hide();
+				}
+				break;
+		}
+		return true;
+	}
+
+	//--------------------------------------------------------------
+	//	ステータス
+	//--------------------------------------------------------------
+	function isBusy(){
+		return visible&&!pause;
+	}
+}

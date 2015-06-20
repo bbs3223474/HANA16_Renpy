@@ -1,0 +1,756 @@
+//==============================================================
+//	TConfig
+//==============================================================
+class TConfig{
+
+	var PNone=0,PStart=1,PTick=2,PReturn=3,PSaveLoad=4;
+	var PageAll="all";
+	var TagSystem="system",TagSound="sound";
+	var TagRightHide='righthide',TagRightLog='rightlog',TagRightConfig='rightconfig';
+	var TagSystemReset='systemreset',TagSoundReset='soundreset';
+	var TagSystemReturn='systemreturn',TagSoundReturn='soundreturn';
+	var TagSystemTitle='systemtitle';
+	var TagMessageSpeed="messagespeed",TagAutoSpeed="autospeed";
+	var TagMasterVolume="mastervolume",TagBGMVolume="bgmvolume",TagSEVolume="sevolume",TagVoiceVolume="voicevolume",TagBgVoiceVolume="bgvoicevolume";
+	var TagVoiceOff="voiceoff";
+	var TagWinOpacity='winopacity';
+
+	var buttonKey=new Array();	//システムボイスの一斉更新のため、アイテム（ボタン系）のキーを記録しておく
+	var sliderKey=new Array();	//システムボイスの一斉更新のため、アイテム（スライダー系）のキーを記録しておく
+
+	var owner;
+	var phase;
+	var page;
+	var layer;
+	var sampleLayer;	//メッセージサンプル用レイヤ
+	var timer;
+	var items;
+	var images;
+	var scriptFilename;	//使ってる？
+
+	var sampleMessage='メッセージ表示スピードのサンプルです。末端はオート待ち時間設定分だけ待ちます。';	//サンプルで使用する文字列のデフォルト
+	var sampleMax=16;		//折り返しまで何文字か？（ヨコ）デフォルト
+	var sampleOffsetX=34;	//サンプル文字のオフセットx
+	var sampleOffsetY=34;	//サンプル文字のオフセットy
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TConfig(owner){
+		this.owner=owner;
+		phase=PNone;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		if(layer!==void){
+			delete layer;
+		}
+		if(items!==void){
+			delete items;
+		}
+		if(images!==void){
+			delete images;
+		}
+		if(sampleLayer!==void){
+			delete sampleLayer;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	メモリ解放
+	//--------------------------------------------------------------
+	function releaseLayer(){
+		if(layer!==void){
+			owner.remove(layer);
+			invalidate layer;
+			layer=void;
+		}
+	}
+	function releaseItems(){
+		if(items!==void){
+			var temp=[];
+			temp.assign(items);
+			for(var i=0;i<temp.count;i+=2){
+				invalidate temp[i+1].object;
+			}
+			invalidate items;
+			items=void;
+		}
+	}
+	function releaseImages(){
+		if(images!==void){
+			var temp=[];
+			temp.assign(images);
+			for(var i=0;i<temp.count;i+=2){
+				invalidate temp[i+1];
+			}
+			invalidate images;
+			images=void;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	Config表示
+	//--------------------------------------------------------------
+	function start(){
+		releaseLayer();
+		layer=new TConfigLayer(owner,owner.primaryLayer,this);
+		owner.add(layer);
+		layer.setPos(0,0,tSettings.canvasWidth,tSettings.canvasHeight);
+		layer.type=ltAlpha;
+		layer.opacity=0;
+		layer.hitThreshold=0;
+		layer.visible=true;
+
+		makeButton();
+
+		//	フェード用タイマ
+		timer=System.getTickCount();
+		phase=PStart;
+	}
+
+	//--------------------------------------------------------------
+	//	ボタン登録
+	//--------------------------------------------------------------
+	function makeButton(){
+		releaseItems();
+		releaseImages();
+		items=new Dictionary();
+		images=new Dictionary();
+
+		var lines=new Array();
+		lines.load(FileConfigSetting);
+		for(var i=0;i<lines.count;i++){
+			var key,object,idx;
+			if((idx=lines[i].indexOf(":"))>0){
+				key=lines[i].substring(0,idx).trim();
+				object=lines[i].substring(idx+1).trim();
+			}
+			if(key!==void&&object!=""){
+				if("image"==key){
+					var param=object.split(' \t',,true);
+					var temp=new TxLayer(owner,layer);
+					var page=param[0];
+					var image=param[1];
+					var x=+param[2],y=+param[3];
+					temp.loadImages(image);
+					temp.setSizeToImageSize();
+					temp.setPos(x,y);
+					images[page]=temp;
+					if(this.page===void){
+						this.page=page;
+					}
+				}else if("button"==key){
+					var param=object.split(' \t',,true);
+					var page=param[0];
+					var tag=param[1];
+					buttonKey.add(tag);
+					var image=param[2];
+					if(param[1]=='systemtitle' && tScript.script.scene){	//シーン回想時
+						image+='2';
+					}
+					var x=+param[3],y=param[4];
+					var overSE=param[5];
+					var downSE=param[6];
+					var cursor=param[7];
+					var image2=param[8];
+					var temp=new TButton(owner,layer,event,tag);
+					temp.setImage(x,y,image);
+					temp.setVisible(true);
+					temp.setCursor(cursor);
+					temp.setWipeDisabled(tCanvas.isWipe2);
+					//SE設定
+					if(overSE=="off"){temp.buttonStatus.overSE=void;}else if(overSE!="void"){temp.buttonStatus.overSE=overSE;}
+					if(downSE=="off"){temp.buttonStatus.downSE=void;}else if(downSE!="void"){temp.buttonStatus.downSE=downSE;}
+					temp.buttonStatus.images=new Array();
+					temp.buttonStatus.images[0]=image;
+					temp.buttonStatus.images[1]=image2;
+					items[tag]=%['page'=>page,'object'=>temp];
+				}else if("slider"==key){
+					var param=object.split(' \t',,true);
+					var page=param[0];
+					var tag=param[1];
+					sliderKey.add(tag);
+					var baseImage=param[2];
+					var pinImage=param[3];
+					var x=+param[4],y=param[5];
+					var overSE=param[6];
+					var downSE=param[7];
+					var cursor=param[8];
+					var mode=param[9];
+					var temp=new TSlider(owner,layer,event,tag);
+					temp.setImage(x,y,baseImage,pinImage);
+					temp.setCursor(cursor);
+					temp.setWipeDisabled(tCanvas.isWipe2);
+					//SE設定
+					if(overSE=="off"){temp.base.buttonStatus.overSE=void;}else if(overSE!="void"){temp.base.buttonStatus.overSE=overSE;}
+					if(downSE=="off"){temp.base.buttonStatus.downSE=void;}else if(downSE!="void"){temp.base.buttonStatus.downSE=downSE;}
+					if(mode=='vertical'){
+						temp.mode=temp.ModeVirtical;
+					}
+					items[tag]=%['page'=>page,'object'=>temp];
+				}else if("sample"==key){	//サンプル
+					var param=object.split(' \t',,true);
+					var temp=new TxLayer(owner,layer);
+					var page=param[1];
+					var image=param[2];
+					var x=+param[3],y=+param[4];
+					temp.loadImages(image);
+					if(page=='bg'){
+						temp.setSize(temp.imageWidth\3,temp.imageHeight);
+					}else{
+						temp.opacity=tGlobalData.data.environment.winOpacity;
+						temp.setSizeToImageSize();
+					}
+					temp.setPos(x,y);
+					images[page]=temp;
+					if(this.page===void){
+						this.page=page;
+					}
+				}else if("message"==key){	//サンプルの設定項目を反映
+					var param=object.split(' \t',,true);
+					sampleMessage=param[0];
+					sampleMax=+param[1];
+					sampleOffsetX=+param[2];
+					sampleOffsetY=+param[3];
+				}
+			}
+		}
+
+		//	ページ表示
+		showPage(page);
+	}
+
+	function showPage(page){
+
+		var temp=[];
+		temp.assign(images);
+		for(var i=0;i<temp.count;i+=2){
+			temp[i+1].visible=page==temp[i];
+		}
+
+		//サンプル
+		if(images['bg']!==void){
+			if(page=='system'){
+				images['bg'].visible=true;
+				images['window'].visible=true;
+
+				sampleLayer = new SampleLayer(owner,layer);
+				sampleLayer.setPos(images['window'].left,images['window'].top,images['window'].left+images['window'].width,images['window'].top+images['window'].height);
+				//文字設定
+				sampleLayer.font.face=tGlobalData.data.environment.fontFace;
+				sampleLayer.font.bold=tGlobalData.data.environment.fontBold;
+				sampleLayer.font.height=24;
+				sampleLayer.visible=true;
+				sampleLayer.setMessage(sampleMessage,sampleMax);	//表示文字をセットすると表示が始まる
+			}else{
+				if(sampleLayer isvalid) sampleLayer.visible=false;
+			}
+		}
+
+		temp.clear();
+		temp.assign(items);
+		for(var i=0;i<temp.count;i+=2){
+			var tag=temp[i];
+			var object=temp[i+1];
+//			dm("page:"+object.page+" tag:"+tag);
+			if(object.page==page||object.page==PageAll){
+				//	表示するページ
+				if(/:/.test(tag)){
+					var array=tag.split(':',,true);
+					var flag=array[1]=="true";
+					var group=array[0]+":"+(flag?"false":"true");
+					setGroup(object.object,tGlobalData.data.environment[array[0]]==flag,items[group].object);
+				}else if(/voiceoff/.test(tag)){
+					object.object.changeImage(object.object.buttonStatus.images[tGlobalData.data.environment[object.object.buttonStatus.tag]?1:0]);
+				}else if(/sysvoice/.test(tag)){	//システムボイス
+					if(tGlobalData.data.environment.sysVoice==object.object.buttonStatus.tag.substr(9,3)){
+						object.object.push(true);
+					}else{
+						object.object.push(false);
+					}
+				}else if(tag==TagSystem){
+					setGroup(object.object,page==tag,items[TagSound].object);
+				}else if(tag==TagSound){
+					setGroup(object.object,page==tag,items[TagSystem].object);
+				}else if(tag==TagRightHide){
+					object.object.setToggle(true);
+					object.object.setToggleDown(tGlobalData.data.environment.mbRight==ConfigmbRightHide);
+					object.object.setEnabled(tGlobalData.data.environment.mbRight!=ConfigmbRightHide);
+					object.object.addGroup(items[TagRightLog].object);
+					object.object.addGroup(items[TagRightConfig].object);
+				}else if(tag==TagRightLog){
+					object.object.setToggle(true);
+					object.object.setToggleDown(tGlobalData.data.environment.mbRight==ConfigmbRightLog);
+					object.object.setEnabled(tGlobalData.data.environment.mbRight!=ConfigmbRightLog);
+					object.object.addGroup(items[TagRightHide].object);
+					object.object.addGroup(items[TagRightConfig].object);
+				}else if(tag==TagRightConfig){
+					object.object.setToggle(true);
+					object.object.setToggleDown(tGlobalData.data.environment.mbRight==ConfigmbRightConfig);
+					object.object.setEnabled(tGlobalData.data.environment.mbRight!=ConfigmbRightConfig);
+					object.object.addGroup(items[TagRightHide].object);
+					object.object.addGroup(items[TagRightLog].object);
+				}else if(tag==TagMessageSpeed){
+					object.object.setMax(ConfigMessageSpeedMax);
+					object.object.setPosition(tGlobalData.data.environment.messageSpeed,false);
+				}else if(tag==TagAutoSpeed){
+					object.object.setMax(ConfigAutoSpeedMax);
+					object.object.setPosition(tGlobalData.data.environment.autoSpeed,false);
+				}else if(tag==TagWinOpacity){		//メッセージウィンドウ透過度
+					object.object.setMax(ConfigWinOpacityMax);
+					object.object.setPosition(tGlobalData.data.environment.winOpacity,false);
+				}else if(tag==TagMasterVolume){
+					object.object.setMax(ConfigVolumeMax);
+					object.object.setPosition(tGlobalData.data.environment.masterVolume,false);
+				}else if(tag==TagBGMVolume){
+					object.object.setMax(ConfigVolumeMax);
+					object.object.setPosition(tGlobalData.data.environment.bgmVolume,false);
+				}else if(tag==TagSEVolume){
+					object.object.setMax(ConfigVolumeMax);
+					object.object.setPosition(tGlobalData.data.environment.seVolume,false);
+				}else if(tag==TagVoiceVolume){
+					object.object.setMax(ConfigVolumeMax);
+					object.object.setPosition(tGlobalData.data.environment.voiceVolume,false);
+				}else if(tag==TagBgVoiceVolume){	//バックグラウンドボイス
+					object.object.setMax(ConfigVolumeMax);
+					object.object.setPosition(tGlobalData.data.environment.bgVoiceVolume,false);
+				}else if(/charvolume/.test(tag)){
+					var volume=tGlobalData.getVolumeCharRow(tag);
+					if(object.object.mode==object.object.ModeVirtical){
+						volume=ConfigVolumeMax-volume;
+					}
+					object.object.setMax(ConfigVolumeMax);
+					object.object.setPosition(volume,false);
+				}else if(tag=="config"){
+					items['config'].object.setEnabled(false);
+				}else if(tag=="fontbold"){
+					object.object.changeImage(object.object.buttonStatus.images[tGlobalData.data.environment.fontBold?0:1]);
+				}
+				object.object.setVisible(true);
+
+				if(tag=="save"){	//セーブ機能の抑止（シーン回想・タイトル画面では表示しない）
+					if(tScript.script.scene || tTitle.phase!==tTitle.PNone){
+						object.object.setVisible(false);
+					}
+				}else if(tag=="load"){	//ロード機能の抑止（シーン回想では表示しない）
+					if(tScript.script.scene){
+						object.object.setVisible(false);
+					}
+				}
+			}else{
+				//	ページが違うので非表示
+				object.object.setVisible(false);
+			}
+		}
+	}
+
+	function setGroup(object,down,group){
+		object.setToggle(true);
+		object.setToggleDown(down);
+		object.setEnabled(!down);
+		object.addGroup(group);
+	}
+
+	//--------------------------------------------------------------
+	//	イベント処理
+	//--------------------------------------------------------------
+	function event(param){
+		if(/:/.test(param.tag)){
+//			dm(param.tag);
+			var array=param.tag.split(':',,true);
+			var flag=array[1]=="true"?true:false;
+			var group=array[0]+":"+(flag?"false":"true");
+			if(array[0]=="fullscreen"){
+				tWindow.setWindowMode(flag);
+				showPage(page);
+			}else if(/voiceoff/.test(array[0])){	//ボイスのオンオフをボタン2つで行う場合
+				if(tSound.track['voice']!=void && array[0].substr(9,3)==tSound.track['voice'].file.substr(0,3) && flag==true){
+					tSound.stopVoice();
+				}
+				tGlobalData.data.environment[array[0]]=flag;
+			}else{
+				tGlobalData.data.environment[array[0]]=flag;
+			}
+		}else if(/voiceoff/.test(param.tag)){
+			tGlobalData.data.environment[param.tag]=tGlobalData.data.environment[param.tag]?0:1;
+			var object=items[param.tag].object;
+			object.changeImage(param.images[tGlobalData.data.environment[object.buttonStatus.tag]?1:0]);
+			//再生中のボイスが該当するキャラクターのボイスだった場合、ボイス再生を止める
+			if(tSound.track['voice']!==void && tSound.track['voice'].file!==void && param.tag.substr(9,3)==tSound.track['voice'].file.substr(0,3)){
+				tSound.stopVoice();
+			}
+		}else if(/sysvoice/.test(param.tag)){
+		//システムボイス
+			var nowSet='sysvoice_'+tGlobalData.data.environment.sysVoice;
+			items[nowSet].object.push(false);
+			tGlobalData.data.environment.sysVoice=param.tag.substr(9,3);
+			items[param.tag].object.push(true);
+		}else if(param.tag==TagSystem||param.tag==TagSound){
+			showPage(page=param.tag);
+		}else if(param.tag==TagRightHide){		tGlobalData.data.environment.mbRight=ConfigmbRightHide;
+		}else if(param.tag==TagRightLog){		tGlobalData.data.environment.mbRight=ConfigmbRightLog;
+		}else if(param.tag==TagRightConfig){	tGlobalData.data.environment.mbRight=ConfigmbRightConfig;
+		}else if(param.tag==TagMessageSpeed){	tGlobalData.data.environment.messageSpeed=param.position;
+		}else if(param.tag==TagWinOpacity){
+			tGlobalData.data.environment.winOpacity=param.position;
+			if(images['window']!==void){
+				images['window'].opacity=param.position;
+			}
+		}else if(param.tag==TagAutoSpeed){		tGlobalData.data.environment.autoSpeed=param.position;
+		}else if(param.tag==TagMasterVolume){	tGlobalData.data.environment.masterVolume=param.position;tSound.volumeBGM();tSound.volumeSE();tSound.volumeVoice();
+		}else if(param.tag==TagBGMVolume){		tGlobalData.data.environment.bgmVolume=param.position;tSound.volumeBGM();
+		}else if(param.tag==TagSEVolume){		tGlobalData.data.environment.seVolume=param.position;tSound.volumeSE();
+		}else if(param.tag==TagVoiceVolume){	tGlobalData.data.environment.voiceVolume=param.position;tSound.volumeVoice();
+		}else if(param.tag==TagBgVoiceVolume){
+			tGlobalData.data.environment.bgVoiceVolume=param.position;tSound.volumeBgVoice();
+			if(tSound.track['bgvtest']!==void) {
+				tSound.track['bgvtest'].volume=tGlobalData.getVolumeBgVoice()*100;
+			}
+		}else if(/charvolume/.test(param.tag)){
+			var object=items[param.tag].object;
+			var volume=param.position;
+			if(object.mode==object.ModeVirtical){
+				volume=ConfigVolumeMax-volume;
+			}
+			tGlobalData.setVolumeCharRow(param.tag,volume);
+			//再生中のボイスが該当するキャラクターのボイスだった場合、音量変更する
+			if(tSound.track['voice']!=void && param.tag.substr(11,3)==tSound.track['voice'].file.substr(0,3)){
+				tSound.track['voice'].volume=tGlobalData.getVolumeVoice()*volume;
+			}else if(tSound.track['bgvoice']!=void && param.tag.substr(11,3)==tSound.track['bgvoice'].file.substr(0,3)){
+				tSound.track['bgvoice'].volume=tGlobalData.getVolumeBgVoice()*volume;
+			}
+		}else if(param.tag==TagSystemReset){
+			//	初期設定に戻す(System)
+			var flag=tGlobalData.data.environment.fullscreen;
+			tGlobalData.initializeEnvironmentSystem();
+			if(flag!=tGlobalData.data.environment.fullscreen){
+				tWindow.setWindowMode(tGlobalData.data.environment.fullscreen);
+			}
+			tMessage.layerString.font.face=tGlobalData.data.environment.fontFace;
+			tMessage.layerString.font.bold=tGlobalData.data.environment.fontBold;
+			if(images['bg']!==void) sampleLayer.resetMessage();
+			if(images['window']!==void){
+				images['window'].opacity=tGlobalData.data.environment.winOpacity;
+			}
+			showPage(page);
+		}else if(param.tag==TagSoundReset){
+			//	初期設定に戻す(Sound)
+			tGlobalData.initializeEnvironmentSound();
+			tSound.volumeBGM();tSound.volumeSE();tSound.volumeVoice();
+			showPage(page);
+		}else if(param.tag==TagSystemReturn||param.tag==TagSoundReturn){
+			close();
+		}else if(param.tag==TagSystemTitle && askYesNo(tScript.script.scene?"メニューに戻りますか？":"タイトルに戻りますか？")){
+			if(!tScript.script.scene){
+				tScript.initialize();
+			}
+			close();
+			tScript.startFinish();
+		}else if(/cvtest/.test(param.tag)){	//キャラクターボイステスト再生
+			var cvtest=param.tag.substring(7);
+			tSound.play("voice",cvtest,100,1);
+		}else if(/setest/.test(param.tag)){	//SEテスト再生
+			var setest=param.tag.substring(7);
+			tSound.play("se10",setest,100,1);
+		}else if(/bgvtest/.test(param.tag)){	//バックグラウンドボイステスト再生
+			var bgvtest=param.tag.substring(8);
+			if(tSound.track["bgvtest"]===void) tSound.track["bgvtest"]=new TSoundBuffer(tSound.owner,tGlobalData.getVolumeBgVoice);
+			tSound.track["bgvtest"].play(bgvtest+ExtSound,100,1);
+		}else if(param.tag.substr(0,8)=='samplebg'){
+			with(images['bg']){
+				var num=+param.tag.substr(8,1);
+				.imageLeft=-(.imageWidth\3*(num-1));
+			}
+		}else if(param.tag=='save'){	//セーブ画面移行
+			tSaveLoad.startSave();
+			phase=PSaveLoad;
+		}else if(param.tag=='load'){	//ロード画面移行
+			tSaveLoad.startLoad();
+			phase=PSaveLoad;
+		}else if(param.tag=='fontface'){	//フォント
+//			var flags = fsfFixedPitch | fsfSameCharSet | fsfNoVertical | fsfTrueTypeOnly | fsfUseFontFace;	//等幅ではないものは選択不可
+			var flags = fsfSameCharSet | fsfNoVertical | fsfTrueTypeOnly | fsfUseFontFace;	//等幅ではないものも選択可
+			var fontSize = tMessage.layerString.font.height;
+			tMessage.layerString.font.height = 24;
+			tMessage.layerString.font.doUserSelect(flags, "フォントの選択", "フォントを選択してください", "ABCDEFGHIあいうえお亜胃宇絵御");
+			tGlobalData.data.environment.fontFace = tMessage.layerString.font.face;
+			if(images['bg']!==void){
+				sampleLayer.fillRect(0,0,tConfig.images['window'].width,tConfig.images['window'].height,0x00000000);
+				sampleLayer.font.face=tGlobalData.data.environment.fontFace;
+				sampleLayer.resetMessage();
+			}
+			tMessage.layerString.font.height=fontSize;
+		}else if(param.tag=='fontbold'){	//太字
+			tGlobalData.data.environment.fontBold=tGlobalData.data.environment.fontBold?0:1;
+			var object=items[param.tag].object;
+			object.changeImage(param.images[tGlobalData.data.environment.fontBold?0:1]);
+			tMessage.layerString.font.bold=tGlobalData.data.environment.fontBold;
+			if(images['bg']!==void){
+				sampleLayer.fillRect(0,0,tConfig.images['window'].width,tConfig.images['window'].height,0x00000000);
+				sampleLayer.resetMessage();
+				sampleLayer.font.bold=tGlobalData.data.environment.fontBold;
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	Close
+	//--------------------------------------------------------------
+	function close(){
+		tGlobalData.save();
+		if(tGlobalData.data.environment.winOpacity!=tMessage.layerFrame.opacity) tMessage.setWindowOpecity(tGlobalData.data.environment.winOpacity);
+		phase=PReturn;
+		tScript.script.finish=false;
+	}
+
+	//--------------------------------------------------------------
+	//	Tick
+	//--------------------------------------------------------------
+	function tick(){
+		//文字描写
+		if(sampleLayer isvalid && sampleLayer!==void && page=='system') sampleLayer.tick();
+
+		switch(phase){
+			case PNone:
+				break;
+			case PStart:
+				if(tSaveLoad.page!==void && tSaveLoad.page!=''){	//セーブ・ロード画面から移動してきた時
+					layer.opacity=255;
+					phase=PTick;
+//					if(tSaveLoad!==void && tSaveLoad.datapage!==void && tSaveLoad.layer isvalid && tSaveLoad.layer!==void){
+						with(tSaveLoad){
+							.layer.opacity=0;
+							.layer.visible=false;
+							.releaseLayer();
+							.releaseItems();
+							if(.layout.items!==void){
+								for(var i=0;i<.layout.items.count;i++){
+									invalidate .layout.items[i].base;
+								}
+								invalidate .layout.items;
+								delete .layout.items;
+							}
+							.phase=.PNone;
+							.page='';
+						}
+//					}
+				}else if(timer+10<=System.getTickCount()){
+					timer=System.getTickCount();
+					if(tGlobalData.data.environment.effectoff||(layer.opacity+=tSettings.changeSpeed)>=255){
+						layer.opacity=255;
+						phase=PTick;
+					}
+				}
+				break;
+			case PTick:
+				break;
+			case PReturn:
+				if(timer+10<=System.getTickCount()){
+					timer=System.getTickCount();
+					if(tGlobalData.data.environment.effectoff||(layer.opacity-=tSettings.changeSpeed)<=0){
+						layer.opacity=0;
+						layer.visible=false;
+						releaseLayer();
+						releaseItems();
+						releaseImages();
+						invalidate sampleLayer;
+						phase=PNone;
+					}
+				}
+				break;
+			case PSaveLoad:
+				break;
+		}
+	}
+
+	function isBusy(){
+		return phase!=PNone;
+	}
+}
+
+//==============================================================
+//	TConfigLayer
+//==============================================================
+class TConfigLayer extends Layer{
+
+	var owner;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TConfigLayer(window,parent,owner){
+		super.Layer(window,parent);
+		this.owner=owner;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		super.finalize(...);
+	}
+
+	//--------------------------------------------------------------
+	//	Event
+	//--------------------------------------------------------------
+	function onMouseDown(x,y,button,shift){
+	}
+	function onMouseUp(x,y,button,shift){
+		if(button==mbRight){
+			owner.close();
+		}
+	}
+}
+
+
+
+//==============================================================
+//	SampleLayer	サンプルの文字表示
+//==============================================================
+class SampleLayer extends Layer{
+	var phase;
+	var PStart=0,PDraw=1,PWait=2,PAuto=3,PReset=4;
+	var waitTime;
+	var autoTime;
+	var message;	//外部から取得した表示文字列を格納する
+	var count_max;	//最終的に表示する文字数
+	var count_x;	//折り返しまで何文字か？（ヨコ）
+	var count;	//文字カウンター
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function SampleLayer(window,parent){
+		super.Layer(window,parent);
+		phase=PStart;
+		message='';
+		count=0;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		super.finalize(...);
+	}
+
+	//--------------------------------------------------------------
+	//	tick
+	//--------------------------------------------------------------
+	function tick(){
+		switch(phase){
+			case PStart:
+				if(message!=='') phase=PDraw;
+				break;
+			case PDraw:
+				if(drawMessage()){	//描写を行いつつ、描写文字が残ってるかどうかを調べる
+					waitTime=ConfigMessageSpeedMax-tGlobalData.data.environment.messageSpeed+System.getTickCount();
+					phase=PWait;
+					break;
+				}else{
+					autoTime=(ConfigAutoSpeedMax-tGlobalData.data.environment.autoSpeed)*20+System.getTickCount();
+					phase=PAuto;
+					break;
+				}
+			case PWait:
+				if(waitTime<=System.getTickCount()){
+					phase=PDraw;
+				}
+				break;
+			case PAuto:
+				if(autoTime<=System.getTickCount() && tGlobalData.data.environment.messageSpeed!=100){
+					phase=PReset;
+				}
+				break;
+			case PReset:
+				if(tGlobalData.data.environment.messageSpeed!=100) this.fillRect(0,0,tConfig.images['window'].width,tConfig.images['window'].height,0x00000000);
+				phase=PStart;
+				break;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	drawMessage	文字を1文字描画する	描写文字が残っている場合はtrueを返す
+	//--------------------------------------------------------------
+	function drawMessage(){
+		var mes = getMessage();
+		var fontSize = DefaultMessageSize*DefaultMessageSizeStep;
+		var x = tConfig.sampleOffsetX+fontSize*((count-1)%count_x);
+		var y = tConfig.sampleOffsetY+(fontSize+DefaultMessageLinePitch)*((count-1)\count_x);
+		if(tSettings.fontOutline=='true'){	//袋文字？
+			if(tSettings.fontShadow=='true'){	//影？
+				this.drawText(x,y,mes,tSettings.fontShadowColor,255,true,255,tSettings.fontShadowColor,2,2,2);
+				this.drawText(x,y,mes,tSettings.fontColor,255,true,255*4,tSettings.fontOutlineColor,1,0,0);
+			}else{
+				this.drawText(x,y,mes,tSettings.fontColor,255,true,255*4,tSettings.fontOutlineColor,1,0,0);
+			}
+		}else{
+			if(tSettings.fontShadow=='true'){	//影？
+				this.drawText(x,y,mes,tSettings.fontColor,255,true,255,tSettings.fontShadowColor,1,1,1);
+			}else{
+				this.drawText(x,y,mes,tSettings.fontColor,255,true,0,0,0,0,0);
+			}
+		}
+		if(count==count_max+1){
+			count=0;
+			return false;
+		}
+		return true;
+	}
+
+	//--------------------------------------------------------------
+	//	setMessage	外部から表示する文字列と折り返しまで何文字か？（ヨコ）をセットする
+	//--------------------------------------------------------------
+	function setMessage(sampleMessage,sampleMax){
+		message = sampleMessage;
+		count_max = message.length;
+		count_x = sampleMax;
+		count = 0;
+	}
+
+	//--------------------------------------------------------------
+	//	getMessage	セットされた文字列から1文字ずつ切り出して返す
+	//--------------------------------------------------------------
+	function getMessage(){
+		var mesPlus = message.substr(count,1);
+		count++;
+		return mesPlus;
+	}
+
+	//--------------------------------------------------------------
+	//	resetMessage	文字に関係する項目を変更した際のリセットに使用
+	//--------------------------------------------------------------
+	function resetMessage(){
+		count = 0;
+		phase = PReset;
+	}
+
+	//--------------------------------------------------------------
+	//	Event
+	//--------------------------------------------------------------
+	function onClick(x, y){
+		parent.onClick(left+x,top+y);
+	}
+	function onDoubleClick(x, y){
+		parent.onDoubleClick(left+x,top+y);
+	}
+	function onMouseDown(x,y,button,shift){
+		parent.onMouseDown(left+x,top+y,button,shift);
+	}
+	function onMouseUp(x,y,button,shift){
+		parent.onMouseUp(left+x,top+y,button,shift);
+	}
+	function onMouseMove(x,y,shift){
+		parent.onMouseMove(left+x,top+y,shift);
+	}
+	function onMouseLeave(){
+		parent.onMouseLeave();
+	}
+	function onMouseEnter(){
+		parent.onMouseEnter();
+	}
+}

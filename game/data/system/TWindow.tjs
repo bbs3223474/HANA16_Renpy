@@ -1,0 +1,469 @@
+//==============================================================
+//	ウィンドウ
+//==============================================================
+class TWindow extends Window{
+
+	var layer,layer0,layer1,layerBeta,layerEffect,layerMessage,layerButton,layerSelect,layerSystem;
+
+	var temp;
+	var hide;
+	var activate;
+	var enabledRightButton;
+	var closeFlag;	//閉じる拡張
+	var timer;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TWindow(){
+		super.Window();
+		System.onActivate=onSystemActivate;
+		System.onDeactivate=onSystemDeactivate;
+
+		closeFlag=false;	//閉じる拡張
+		borderStyle=bsSingle;										//	サイズ変更不可
+		showScrollBars=false;
+		setInnerSize(tSettings.canvasWidth,tSettings.canvasHeight);
+
+		if(tGlobalData.data.screen===void){
+			left=(System.screenWidth-width)\2;
+			top=(System.screenHeight-height)\2;
+			tGlobalData.data.screen=new Dictionary();
+			tGlobalData.data.screen.left=left;
+			tGlobalData.data.screen.top=top;
+		}else{
+			left=tGlobalData.data.screen.left;
+			top=tGlobalData.data.screen.top;
+		}
+
+		//	primary
+		add(new Layer(this, null));
+		primaryLayer.setPos(0,0,tSettings.canvasWidth,tSettings.canvasHeight);
+		primaryLayer.type=ltAlpha;
+		primaryLayer.neutralColor=0xff000000;
+		primaryLayer.fillRect(0,0,tSettings.canvasWidth,tSettings.canvasHeight,0xff000000);	//プライマリの色は黒へ
+		primaryLayer.visible=true;
+		primaryLayer.cursor=getCursor(tSettings.cursorDefault);
+
+		//	layer
+		layer=new TLayer(this,primaryLayer);
+		add(layer);
+		layer.setPos(0,0,tSettings.canvasWidth,tSettings.canvasHeight);
+		layer.type=ltAlpha;
+		layer.visible=true;
+
+		//	canvas
+		layer0=new AvgLayer(this,layer,"canvas");
+		add(layer0);
+		layer0.setPos(0,0,tSettings.canvasWidth,tSettings.canvasHeight);
+		layer0.type=ltAlpha;
+		layer0.absoluteOrderMode=true;
+		layer0.visible=true;
+		layer1=new AvgLayer(this,layer,"back");
+		add(layer1);
+		layer1.setPos(0,0,tSettings.canvasWidth,tSettings.canvasHeight);
+		layer1.type=ltAlpha;
+		layer1.absoluteOrderMode=true;
+		layer1.visible=false;
+
+		layerBeta=new AvgLayer(this,layer,"canvas");
+		add(layerBeta);
+		layerBeta.setPos(0,0,tSettings.canvasWidth*layerBetaSize,tSettings.canvasHeight*layerBetaSize);
+		layerBeta.type=ltAlpha;
+		layerBeta.absoluteOrderMode=true;
+		layerBeta.visible=false;
+
+		//	effect
+		layerEffect=new TLayer(this,layer);
+		add(layerEffect);
+		layerEffect.setPos(0,0,tSettings.canvasWidth,tSettings.canvasHeight);
+		layerEffect.type=ltAlpha;
+
+		//	message
+		layerMessage=new TLayer(this,layer);
+		add(layerMessage);
+		layerMessage.setPos(0,0,tSettings.canvasWidth,tSettings.canvasHeight);
+		layerMessage.type=ltAlpha;
+		layerMessage.visible=true;
+
+		//	button
+		layerButton=new TLayer(this,layer);
+		add(layerButton);
+		layerButton.setPos(0,0,tSettings.canvasWidth,tSettings.canvasHeight);
+		layerButton.type=ltAlpha;
+		layerButton.visible=true;
+
+		//	select
+		layerSelect=new TLayer(this,layer);
+		add(layerSelect);
+		layerSelect.setPos(0,0,tSettings.canvasWidth,tSettings.canvasHeight);
+		layerSelect.type=ltAlpha;
+		layerSelect.visible=true;
+
+		//	system
+		layerSystem=new TLayer(this,layer);
+		add(layerSystem);
+		layerSystem.setPos(0,0,tSettings.canvasWidth,tSettings.canvasHeight);
+		layerSystem.type=ltAlpha;
+		layerSystem.visible=true;
+
+		//	キャプション指定
+		caption=System.title;
+
+		visible=true;
+		hide=false;
+		enabledRightButton=false;
+	}
+
+	function ev(param){
+//		dm("ev");
+//		dm(param);
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		super.finalize();
+	}
+
+	//--------------------------------------------------------------
+	//	ウィンドウを閉じる
+	//--------------------------------------------------------------
+	function onCloseQuery(canclose){
+		tMain.timer.enabled=false;
+		System.onActivate=void;
+		System.onDeactivate=void;
+
+		var result=askYesNo("終了しますか？");
+		closeFlag=result;
+		tMain.timer.enabled=true;
+		System.onActivate=onSystemActivate;
+		System.onDeactivate=onSystemDeactivate;
+		if(result){
+			//ムービー止める
+			if(tMovie.videoLayer!==void)tMovie.stop();
+			//各種音を切る
+//			tSound.stopBGM();
+//			tSound.stopSE();
+			tSound.stopVoice();
+			tSound.stopBgVoice();
+			timer=System.getTickCount();
+			tScript.bgvoiceCollision=0;	//BGVフラグも初期化
+		}
+//		super.onCloseQuery(result);
+	}
+
+	function exClose(canclose){	//終了演出
+		if(timer+10<=System.getTickCount()){
+			timer=System.getTickCount();
+			var alpha = layer.opacity;
+			if(tGlobalData.data.environment.effectoff||(alpha-=16)<=0){
+				alpha=0;
+				if(tTitle.layer!=void && tTitle.layer isvalid) tTitle.layer.visible=false;
+				if(tConfig.layer!=void && tConfig.layer isvalid) tConfig.layer.visible=false;
+				if(tSaveLoad.layer!=void && tSaveLoad.layer isvalid) tSaveLoad.layer.visible=false;
+				if(tExBGM.layer!=void && tExBGM.layer isvalid) tExBGM.layer.visible=false;
+				if(tExScene.layer!=void && tExScene.layer isvalid) tExScene.layer.visible=false;
+				if(tExCG.layer!=void && tExCG.layer isvalid) tExCG.layer.visible=false;
+				if(tLog.layer!=void && tLog.layer isvalid) tLog.layer.visible=false;
+			}
+			if(tTitle.layer!=void && tTitle.layer isvalid) tTitle.layer.opacity=alpha;
+			if(tConfig.layer!=void && tConfig.layer isvalid){
+				if(tTitle.layer!=void && tTitle.layer isvalid) tTitle.layer.visible=false;
+				tConfig.layer.opacity=alpha;
+			}
+			if(tSaveLoad.layer!=void && tSaveLoad.layer isvalid){
+				if(tTitle.layer!=void && tTitle.layer isvalid) tTitle.layer.visible=false;
+				tSaveLoad.layer.opacity=alpha;
+			}
+			if(tExBGM.layer!=void && tExBGM.layer isvalid){
+				tTitle.layer.visible=false;
+				tExBGM.layer.opacity=alpha;
+			}
+			if(tExScene.layer!=void && tExScene.layer isvalid){
+				tTitle.layer.visible=false;
+				tExScene.layer.opacity=alpha;
+			}
+			if(tExCG.layer!=void && tExCG.layer isvalid){
+				tTitle.layer.visible=false;
+				tExCG.layer.opacity=alpha;
+			}
+			if(tLog.layer!=void && tLog.layer isvalid) tLog.layer.opacity=alpha;
+			layer.opacity=alpha;
+		}
+		if(!tSound.isPlay('sebtnup') || tGlobalData.data.environment.sysVoice=='def'){
+			tSaveLoad.close();
+			tGlobalData.save();
+			super.onCloseQuery(true);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	フルスクリーン
+	//--------------------------------------------------------------
+	function setWindowMode(mode){
+		try{
+			fullScreen=mode;
+		}catch{
+		}
+		tGlobalData.data.environment.fullscreen=fullScreen;
+		return fullScreen;
+	}
+
+	//--------------------------------------------------------------
+	//	hide
+	//--------------------------------------------------------------
+	function setHide(hide=void){
+		if(hide===void){
+			hide=!this.hide;
+		}
+		this.hide=hide;
+		tMessage.setHide(hide);
+		tSelect.setHide(hide);
+		tGameSystem.setHide(hide);
+	}
+
+	//--------------------------------------------------------------
+	//	カーソル
+	//--------------------------------------------------------------
+	function getCursor(param=void){
+		if(param!==void&&param!="void"){
+			if(cursorTable[param]!==void){
+				return +cursorTable[param];
+			}else{
+				return param;
+			}
+		}
+		return void;
+	}
+
+	//--------------------------------------------------------------
+	//	イベント
+	//--------------------------------------------------------------
+	function onMouseMove(x,y,shift){
+	}
+
+	function onMouseDown(x,y,button,shift){
+		super.onMouseDown(...);
+//		if(button==mbLeft){
+//			dm("onMouseDown left");
+//		}else if(button==mbRight){
+//			dm("onMouseDown right");
+//		}else if(button==mbMiddle){
+//			dm("onMouseDown middle");
+//		}
+	}
+	function onMouseUp(x,y,button,shift){
+		super.onMouseUp(...);
+//		if(button==mbLeft){
+//			dm("onMouseUp left");
+//		}else if(button==mbRight){
+//			dm("onMouseUp right");
+//		}else if(button==mbMiddle){
+//			dm("onMouseUp middle");
+//		}
+	}
+
+	function onMouseWheel(shift,delta,x,y){
+		if(tLog.isBusy()){
+			tLog.onMouseWheel(...);
+		}else{
+//			if(!tTitle.isBusy()&&!tConfig.isBusy()&&!tSaveLoad.isBusy()&&!tSelect.isBusy()&&!tMap.isBusy()){
+			if(!tTitle.isBusy()&&!tConfig.isBusy()&&!tSaveLoad.isBusy()){	//選択肢、マップでログ抑止する必要は？
+				if(delta<0){
+					tCanvas.cancelAnime("all");
+					if(tMessage.layer.visible){
+						tScript.waitKey=false;
+						tMessage.endKeyWait();
+						tMessage.flashMessage();
+						tGameSystem.setSkipCount(-delta\120);
+					}
+				}else{
+					//ムービー再生中・ログOFF時はバックログを出さない
+					if (tMovie.status!="play" && tLocalData.getScriptLogFunc()) tLog.start();
+				}
+			}
+		}
+	}
+	function onKeyDown(key,shift,process=true){
+		//dm("onKeyDown:"+key+","+shift);
+		if(shift&ssCtrl){
+			if(hide){
+			}else{
+				if(tMovie.status=="play"){
+				}else{
+					if(key==17/*ctrl*/){
+						//★Ctrlのスキップでボイス継続OFFとなっているのにボイスが継続されている件に対応
+						if(tGlobalData.data.environment.voicecut){
+							tSound.stopVoice();
+						}
+						messageSkip();
+					}
+				}
+			}
+		}else if(key==VK_RETURN||key==VK_SPACE){
+			messageSkip();
+		}
+	}
+	function onKeyPress(key,process=true){
+		//dm("onKeyPress");
+	}
+	function onKeyUp(key,shift,process=true){
+		//dm("onKeyUp");
+		if(key==VK_RETURN&&(shift&(ssAlt|ssRepeat))==ssAlt){
+			//	ALT+Enterで画面切り替え。フルスクリーン/ウィンドウ表示
+			setWindowMode(!fullScreen);
+		}else if(key==VK_RETURN||key==VK_SPACE){
+			if(hide){
+			}else{
+				if(tMovie.status=="play"){
+				}else{
+					//messageSkip();
+				}
+			}
+		}
+		//★Ctrlのスキップでボイス継続OFFとなっているのにボイスが継続されている件に対応
+		else if(key==17/*ctrl*/){
+			if(tGlobalData.data.environment.voicecut){
+				tSound.stopVoice();
+			}
+		}
+		//クイックセーブ（ゲームシステムON && シーン回想ではない && バックログ非表示 && タイトル）
+		//（マップ画面で、セーブorクイックセーブのアイテムが設置してある）
+		//
+		else if(key==VK_F1){
+			if(tLog.phase+tTitle.phase+tConfig.phase+tSaveLoad.phase===0){
+				if(tLocalData.getScriptGameSystemVisible() && !tScript.script.scene){
+					tGameSystem.buttons['qsave'].onMouseDown();
+					tGameSystem.buttons['qsave'].onMouseUp();
+//					tLocalData.quickSave();
+				}else if(tMap.layer!==void){
+					for(var i=0; i<tLocalData.data.script.map.items.count; i++){
+						if(tLocalData.data.script.map.items[i] isvalid && tLocalData.data.script.map.items[i]!==void) {
+							if(tLocalData.data.script.map.items[i].type=="save" || tLocalData.data.script.map.items[i].type=="qsave"){
+								tGameSystem.buttons['qsave'].onMouseDown();
+								tGameSystem.buttons['qsave'].onMouseUp();
+//								tLocalData.quickSave();
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+		//クイックロード（ゲームシステムON && シーン回想ではない && バックログ非表示）
+		//（マップ画面で、ロードorクイックロードのアイテムが設置してある）
+		else if(key==VK_F2){
+			if(tLog.phase+tTitle.phase+tConfig.phase+tSaveLoad.phase===0){
+				if(tLocalData.getScriptGameSystemVisible() && !tScript.script.scene){
+					tGameSystem.buttons['qload'].onMouseDown();
+					tGameSystem.buttons['qload'].onMouseUp();
+//					tLocalData.quickLoad();
+				}else if(tMap.layer!==void){
+					for(var i=0; i<tLocalData.data.script.map.items.count; i++){
+						if(tLocalData.data.script.map.items[i] isvalid && tLocalData.data.script.map.items[i]!==void) {
+							if(tLocalData.data.script.map.items[i].type=="load" || tLocalData.data.script.map.items[i].type=="qload"){
+								tGameSystem.buttons['qload'].onMouseDown();
+								tGameSystem.buttons['qload'].onMouseUp();
+//								tLocalData.quickLoad();
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	event
+	//--------------------------------------------------------------
+	function onClickEx(x, y){
+//		dm("onClickEx");
+		if(closeFlag){	//ウィンドウを閉じる演出スキップ
+			closeFlag=false;
+			tSaveLoad.close();
+			tGlobalData.save();
+			tMain.timer.enabled=false;
+			System.onActivate=void;
+			System.onDeactivate=void;
+			super.onCloseQuery(true);
+		}
+	}
+	function onDoubleClickEx(x, y){
+//		dm("onDoubleClickEx");
+	}
+	function onMouseDownEx(x,y,button,shift){
+//		dm("onMouseDownEx");
+	}
+	function onMouseUpEx(x,y,button,shift){
+//		dm("onMouseUpEx");
+		if(button==mbLeft){
+			if(hide){
+				setHide(!hide);
+			}else{
+				if(tMovie.status=="play"){
+					if(!tMovie.skipoff){
+						tMovie.stop();
+					}
+				}else{
+					messageSkip();
+				}
+			}
+		}else if(button==mbRight){
+			if(enabledRightButton){
+				tGameSystem.setSkip(false);
+				tGameSystem.setAuto(false);
+				if(tGlobalData.data.environment.mbRight==ConfigmbRightHide){
+					if(!hide&&(tMessage.visible||tLocalData.getScriptGameSystemVisible())){
+						setHide(!hide);
+					}
+				}else if(tGlobalData.data.environment.mbRight==ConfigmbRightLog){
+					tLog.start();
+				}else if(tGlobalData.data.environment.mbRight==ConfigmbRightConfig){
+					tConfig.start();
+				}
+			}
+		}
+	}
+	function onMouseMoveEx(x,y,shift){
+//		dm("onMouseMoveEx:"+x+","+y);
+	}
+	function onSystemActivate(){
+		activate=true;
+	}
+	function onSystemDeactivate(){
+		activate=false;
+	}
+
+	//	マウスクリック、エンター、スペースを押したときの処理
+	function messageSkip(){
+		if(tCanvas.isWipe()&&!tLocalData.getScriptWipeCancelDisabled()){
+			tCanvas.stopWipe();
+		}
+		tScript.waitKey=false;
+		tMessage.endKeyWait();
+		tMessage.flashMessage();
+		if(!tLocalData.getScriptMoveCancelDisabled()){
+			tCanvasBeta.cancelAnime("all");
+		}
+		tCanvasBeta.setRenderFlag("all");
+		tCanvasBeta.skipCamera();
+		tGameSystem.setSkip(false);
+		tGameSystem.setAuto(false);
+		if(!tLocalData.getScriptWaitCancelDisabled()) tScript.waitTime=0;
+		//SEのwait命令が走っている場合、クリックでスキップする
+		for(var i=tScript.waitListSound.count-1;i>=0;i--){
+				if(tScript.waitListSound[i]=="seall"){
+					tScript.waitListSound.erase(i);
+				}else if(tScript.waitListSound[i]=="voice"){
+					continue;
+				}else if(tScript.waitListSound[i]=="bgvoice"){
+					continue;
+				}else{
+					tScript.waitListSound.erase(i);
+				}
+		}
+	}
+}

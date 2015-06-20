@@ -1,0 +1,25 @@
+//	互換モード
+//		false(default)
+//			メッセージ
+//				１行で記述
+//			条件式
+//				#if expression filename:label	ファイル名とラベル名を指定
+//				#if expression filename:		ファイル名のみ(ファイルの先頭から)
+//				#if expression :label			ラベルのみ
+//				#if expression label			ラベルのみ
+//
+//		true
+//			メッセージ
+//				複数行で記述、"*"がメッセージ終了記号
+//			条件式
+//				#if expression label			labelが見つからなければfilenameとしてファイルを読み込む
+Compatibility:false
+
+//	レイヤ設定
+
+//	変数設定
+flag:f1 好感度
+flag:s1 クリアフラグ
+flag:m0 回想１
+
+//	座標設定

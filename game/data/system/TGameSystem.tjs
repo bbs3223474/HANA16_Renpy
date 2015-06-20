@@ -1,0 +1,343 @@
+//==============================================================
+//	TGameSystem
+//==============================================================
+
+class TGameSystem{
+
+	var TagSkip=0,TagAuto=1,TagLog=2,TagSave=3,TagLoad=4,TagQsave=5,TagQload=6,TagSystem=7,TagWindow=8,TagNext=9,TagTitle=10;
+	var Param=%[
+		'skip'  =>%['tag'=>TagSkip  ,'toggle'=>true ,'event'=>eventSkip],
+		'auto'  =>%['tag'=>TagAuto  ,'toggle'=>true ,'event'=>eventAuto],
+		'log'   =>%['tag'=>TagLog   ,'toggle'=>false,'event'=>eventLog],
+		'save'  =>%['tag'=>TagSave  ,'toggle'=>false,'event'=>eventSave],
+		'load'  =>%['tag'=>TagLoad  ,'toggle'=>false,'event'=>eventLoad],
+		'qsave' =>%['tag'=>TagQsave ,'toggle'=>false,'event'=>eventQsave],
+		'qload' =>%['tag'=>TagQload ,'toggle'=>false,'event'=>eventQload],
+		'system'=>%['tag'=>TagSystem,'toggle'=>false,'event'=>eventSystem],
+		'window'=>%['tag'=>TagWindow,'toggle'=>false,'event'=>eventWindow],
+		'next'  =>%['tag'=>TagNext  ,'toggle'=>false,'event'=>eventNext],
+		'title' =>%['tag'=>TagTitle ,'toggle'=>false,'event'=>eventTitle],
+		];
+
+	var owner;
+	var layer,imageLayer,imageName;
+	var buttons;
+	var skipFlag,autoFlag;
+	var skipCount;
+	var alpha,alphaAdd,timer;
+	var titleButtonFile;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TGameSystem(owner){
+		this.owner=owner;
+		layer=owner.layerSystem;
+
+		buttons=new Dictionary();
+		imageLayer=new Array();
+		imageName=new Array();
+
+		initialize();
+
+		skipFlag=false;
+		autoFlag=false;
+		skipCount=0;
+		alpha=0;
+		tLocalData.setScriptGameSystemVisible(false);
+		tLocalData.setScriptGameSystemHide(false);
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		delete buttons;
+		delete imageLayer;
+	}
+
+	//--------------------------------------------------------------
+	//	Initialize
+	//--------------------------------------------------------------
+	function initialize(){
+		var lines=new Array();
+		lines.load(FileGameSystemSetting);
+		for(var i=0;i<lines.count;i++){
+			var key,object,idx;
+			if((idx=lines[i].indexOf(":"))>0){
+				key=lines[i].substring(0,idx).trim();
+				object=lines[i].substring(idx+1).trim();
+			}
+			if(key!==void&&object!=""){
+				if("image"==key){
+					var param=object.split(' \t',,true);
+					var temp=new TLayer(owner,layer);
+					temp.loadImages(param[0]);
+					temp.setSizeToImageSize();
+					temp.setPos(+param[1],+param[2]);
+					imageLayer.add(temp);
+					imageName.add(param[0]);
+				}else if("button"==key){
+					var param=object.split(' \t',,true);
+					if(Param[param[0]]!==void){
+						var overSE=param[4];
+						var downSE=param[5];
+						buttons[param[0]]=new TButton(owner,layer,Param[param[0]].event,Param[param[0]].tag);
+						buttons[param[0]].setImage(+param[2],+param[3],param[1]);
+						buttons[param[0]].setToggle(Param[param[0]].toggle);
+						buttons[param[0]].setCursor(param[6]);
+						if(overSE=="off"){buttons[param[0]].buttonStatus.overSE=void;}else if(overSE!="void"){buttons[param[0]].buttonStatus.overSE=overSE;}
+						if(downSE=="off"){buttons[param[0]].buttonStatus.downSE=void;}else if(downSE!="void"){buttons[param[0]].buttonStatus.downSE=downSE;}
+						if(param[0]=="title"){
+							titleButtonFile=param[1];
+						}
+					}
+				}
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	ボタンイベント
+	//--------------------------------------------------------------
+	function eventSkip(param){
+		setSkip(param.toggledown);
+	}
+
+	function eventAuto(param){
+		setAuto(param.toggledown);
+	}
+
+	function eventLog(param){
+		tLog.start();
+	}
+
+	function eventSave(param){
+		tSaveLoad.startSave();
+	}
+
+	function eventLoad(param){
+		tSaveLoad.startLoad();
+	}
+
+	function eventQsave(param){
+		tLocalData.quickSave();
+	}
+
+	function eventQload(param){
+//		if(tSettings.quickSaveCount!=1){
+			//★クイックロード拡張（ロード画面へ変遷せずに直接最新のデータをロードする）
+			tLocalData.quickLoad();
+//		}else{
+//			if(askYesNo("クイックロードしますか？")){
+//				//★クイックロード拡張（ロード画面へ変遷せずに直接最新のデータをロードする）
+//				tLocalData.quickLoad();
+//			}
+//		}
+	}
+
+	function eventSystem(param){
+		tConfig.start();
+	}
+
+	function eventWindow(param){
+		tWindow.setHide(true);
+	}
+
+	function eventNext(param){
+		var result=askYesNo("選択肢までスキップしますか？");
+		if(result){
+			tScript.startNext();
+		}
+	}
+
+	function eventTitle(param){
+		var result=askYesNo(tScript.script.scene?"メニューに戻りますか？":"タイトルに戻りますか？");
+		if(result){
+			tScript.startFinish();
+//			tTitle.start();
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	skip auto
+	//--------------------------------------------------------------
+	function setSkip(flag){
+		skipFlag=flag;
+		if(buttons.skip!==void){
+			buttons.skip.setToggleDown(skipFlag);
+		}
+		if(skipFlag){
+			tScript.waitKey=false;
+			tMessage.endKeyWait();
+			tMessage.flashMessage();
+		}
+	}
+
+	function setSkipCount(count){
+		skipCount=count;
+	}
+
+	function decSkipCount(){
+		if(--skipCount<0){
+			skipCount=0;
+		}
+	}
+
+	function clearSkipCount(){
+		skipCount=0;
+	}
+
+	function isSkip(){
+		return skipFlag||(tScript.reSkip&&tWindow.activate&&System.getKeyState(VK_CONTROL)||skipCount>0);
+	}
+
+	function setAuto(flag){
+		autoFlag=flag;
+		if(buttons.auto!==void){
+			buttons.auto.setToggleDown(autoFlag);
+		}
+		if(autoFlag){
+			tMessage.endKeyWait();
+		}
+	}
+
+	function isAuto(){
+		return autoFlag;
+	}
+
+	//--------------------------------------------------------------
+	//	tick
+	//--------------------------------------------------------------
+	function tick(){
+		if(alphaAdd){
+			if(timer+10<=System.getTickCount()){
+				timer=System.getTickCount();
+				alpha+=alphaAdd;
+				if(alpha>=255){
+					alphaAdd=0;
+					setVisible(true);
+				}else if(alpha<=0){
+					alphaAdd=0;
+					setVisible(false);
+				}else{
+					for(var i=0;i<imageLayer.count;i++){
+						imageLayer[i].opacity=alpha;
+					}
+					var temp=[];
+					temp.assign(buttons);
+					for(var i=0;i<temp.count;i+=2){
+						temp[i+1].opacity=alpha;
+					}
+				}
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	visible
+	//--------------------------------------------------------------
+	function setVisible(visible,fade=false){
+		tLocalData.setScriptGameSystemVisible(visible);
+
+		if(tGlobalData.data.environment.effectoff){
+			fade=false;
+		}
+
+		alpha=255;
+		alphaAdd=0;
+		timer=System.getTickCount();
+		if(visible&&fade){
+			alpha=0;
+			alphaAdd=8;
+		}else if(!visible&&fade){
+			visible=true;
+			alphaAdd=-8;
+		}
+		for(var i=0;i<imageLayer.count;i++){
+			imageLayer[i].visible=visible;
+			imageLayer[i].opacity=alpha;
+		}
+		var temp=[];
+		temp.assign(buttons);
+		for(var i=0;i<temp.count;i+=2){
+			temp[i+1].visible=visible;
+			temp[i+1].opacity=alpha;
+		}
+
+		//	シーン鑑賞ではボタンを変える
+		var titlefile=titleButtonFile;
+		if(tScript.script.scene){
+			titlefile+="2";
+		}
+		if(buttons['title'].filename!=titlefile){
+			buttons['title'].changeImage(titlefile);
+			buttons['title'].renew();
+		}
+		buttons['log'].setEnabled(tLocalData.getScriptLogFunc());
+		buttons['save'].setEnabled(!tScript.script.scene);
+		buttons['load'].setEnabled(!tScript.script.scene);
+		buttons['qsave'].setEnabled(!tScript.script.scene);
+		buttons['qload'].setEnabled(!tScript.script.scene);
+		buttons['log'].renew();
+		buttons['save'].renew();
+		buttons['load'].renew();
+		buttons['qsave'].renew();
+		buttons['qload'].renew();
+		if(buttons['next']!==void){
+			buttons['next'].setEnabled(!tScript.script.scene);
+			buttons['next'].renew();
+		}
+	}
+
+	function cancelFade(){
+		if(alphaAdd){
+			if(alphaAdd>0){
+				setVisible(true);
+			}else{
+				setVisible(false);
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	hide
+	//--------------------------------------------------------------
+	function setHide(hide){
+		layer.visible=!hide;
+		tLocalData.setScriptGameSystemHide(hide);
+	}
+
+	//--------------------------------------------------------------
+	//	イメージ変更
+	//--------------------------------------------------------------
+	function setImage(index,filename,renew){
+		tLocalData.setSystemBase(index,filename);
+		if(renew){
+			var fn=tLocalData.getSystemBase(index);
+			imageLayer[index].loadImages(fn!==void?fn:imageName[index]);
+		}
+	}
+
+	function resetImage(renew){
+		tLocalData.clearSystemBase();
+		if(renew){
+			renewImage();
+		}
+	}
+
+	function renewImage(){
+		for(var i=0;i<imageLayer.count;i++){
+			var fn=tLocalData.getSystemBase(i);
+			imageLayer[i].loadImages(fn!==void?fn:imageName[i]);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	busy
+	//--------------------------------------------------------------
+	function isBusy(){
+		return alphaAdd?true:false;
+	}
+
+}

@@ -1,0 +1,179 @@
+//	CGモード画面
+
+//	背景
+//		image
+image:	ex_cg
+
+//	ボタン
+//		tag:
+//			tab		項目切り替えタブ
+//			page	ページ切り替えボタン
+//			return	CGモード終了ボタン
+//		image:
+//			ボタン画像
+//		x,y:
+//			表示位置
+//		cursor:
+//			マウスオーバー時のカーソル形状
+//			voidを指定するとsetting.txtで指定したデフォルトのまま変更しない
+//		tag2:
+//			0～		tag=tab:タブ番号
+//					tag=page:ページを直接選択するボタン
+//			back	前のページボタン
+//			next	次のページボタン
+
+//		tag		image		x	y	overSE	downSE	cursor		tag2
+button:	tab		ex_p_c01	10	90	void	void	void		0
+button:	tab		ex_p_c02	10	130	void	void	void		1
+button:	tab		ex_p_c03	10	170	void	void	void		2
+button:	tab		ex_p_c04	10	210	void	void	void		3
+button:	tab		ex_p_c05	10	250	void	void	void		4
+button:	tab		ex_p_c06	10	290	void	void	void		5
+button:	tab		ex_p_c07	10	330	void	void	void		6
+button:	page	ex_p_01		40	560	void	void	void		0
+button:	page	ex_p_02		70	560	void	void	void		1
+button:	page	ex_p_03		100	560	void	void	void		2
+//button:	page	saveloadpageback	64	544	void	void	void		back
+//button:	page	saveloadpagenext	176	544	void	void	void		next
+button:	return	ex_p_10		640	560	void	void	void
+
+
+
+//	レイアウト
+//		tag:
+//			page	ページレイアウト
+//		横,縦:
+//			横、縦の項目数
+//		image:
+//			ボタン画像
+//		x,y:
+//			表示位置
+//		pitchx,pitchy:
+//			表示間隔位置
+//		cursor:
+//			マウスオーバー時のカーソル形状
+//			voidを指定するとsetting.txtで指定したデフォルトのまま変更しない
+//
+
+//		tag		横	縦	image			x	y	pitchx	pitchy	overSE	downSE	cursor
+layout:	page	3	3	cg_p_00			230	110	180		140		void	void	void
+layout:	all			caption		ex_p_0					808 536
+
+//	項目
+//		tab:
+//			0～	タブに関連付けされる
+//		thumbnail:
+//			表示されるサムネイル
+//		items
+//			表示される画像
+
+
+//		tab	thumbnail		items
+//□■□■□■□■□■□■□■□■□■□■　六夏＆沙雪　□■□■□■□■□■□■□■□■□■□■
+item:	0	cg_p_01			ev01,ev01p1
+item:	0	cg_p_02			ev02,ev02p1
+item:	0	cg_p_04			ev04,ev04p1
+item:	0	cg_p_11			ev11,ev11p1
+item:	0	cg_p_12			ev12,ev12p1,ev12p2
+item:	0	cg_p_13			ev13,ev13p1
+item:	0	cg_p_14			ev14,ev14p1
+item:	0	cg_p_15			ev15,ev15p1
+item:	0	cg_p_16			ev16,ev16p1,ev16p2
+item:	0	cg_p_17			ev17,ev17p1,ev17p2
+item:	0	cg_p_18			ev18,ev18p1,ev18p2
+item:	0	cg_p_19			ev19,ev19p1
+item:	0	cg_p_20			ev20,ev20p1,ev20p2
+item:	0	cg_p_21			ev21,ev21p1
+item:	0	cg_p_22			ev22,ev22p1,ev22p2,ev22p3
+item:	0	cg_p_23			ev23,ev23p1,ev23p2
+item:	0	cg_p_24			ev24,ev24p1
+item:	0	cg_p_25			ev25,ev25p1,ev25p2
+item:	0	cg_p_26			ev26
+//□■□■□■□■□■□■□■□■□■□■　璃紗＆美夜　□■□■□■□■□■□■□■□■□■□■
+item:	1	cg_p_03			ev03
+item:	1	cg_p_10			ev10,ev10p1
+item:	1	cg_p_27			ev27,ev27p1
+item:	1	cg_p_28			ev28,ev28p1
+item:	1	cg_p_29			ev29,ev29p1
+item:	1	cg_p_30			ev30,ev30p1,ev30p2
+item:	1	cg_p_31			ev31,ev31p1,ev31p2
+item:	1	cg_p_32			ev32,ev32p1,ev32p2
+item:	1	cg_p_33			ev33,ev33p1
+item:	1	cg_p_34			ev34,ev34p1,ev34p2
+item:	1	cg_p_35			ev35,ev35p1
+item:	1	cg_p_36			ev36,ev36p1,ev36p2
+item:	1	cg_p_37			ev37,ev37p1,ev37p2
+item:	1	cg_p_38			ev38,ev38p1
+item:	1	cg_p_39			ev39,ev39p1,ev39p2
+item:	1	cg_p_40			ev40,ev40p1
+//□■□■□■□■□■□■□■□■□■□■　七海＆優菜　□■□■□■□■□■□■□■□■□■□■
+item:	2	cg_p_07			ev07,ev07p1
+item:	2	cg_p_41			ev41,ev41p1
+item:	2	cg_p_42			ev42
+item:	2	cg_p_43			ev43
+item:	2	cg_p_44			ev44,ev44p1
+item:	2	cg_p_45			ev45,ev45p1,ev45p2
+item:	2	cg_p_46			ev46,ev46p1
+item:	2	cg_p_47			ev47,ev47p1
+item:	2	cg_p_48			ev48,ev48p1
+item:	2	cg_p_49			ev49,ev49p1
+item:	2	cg_p_50			ev50,ev50p1,ev50p2
+item:	2	cg_p_51			ev51,ev51p1,ev51p2
+item:	2	cg_p_52			ev52,ev52p1
+item:	2	cg_p_53			ev53,ev53p1
+//□■□■□■□■□■□■□■□■□■□■　楓＆紗良　□■□■□■□■□■□■□■□■□■□■
+item:	3	cg_p_08			ev08,ev08p1
+item:	3	cg_p_54			ev54,ev54p1,ev54p2
+item:	3	cg_p_55			ev55,ev55p1
+item:	3	cg_p_56			ev56,ev56p1,ev56p2
+item:	3	cg_p_57			ev57,ev57p1,ev57p2
+item:	3	cg_p_58			ev58,ev58p1,ev58p2
+item:	3	cg_p_59			ev59,ev59p1
+item:	3	cg_p_60			ev60,ev60p1
+item:	3	cg_p_61			ev61,ev61p1,ev61p2
+item:	3	cg_p_62			ev62,ev62p1
+item:	3	cg_p_63			ev63,ev63p1
+item:	3	cg_p_64			ev64,ev64p1,ev64p2,ev64p3
+item:	3	cg_p_65			ev65,ev65p1,ev65p2
+item:	3	cg_p_66			ev66,ev66p1
+//□■□■□■□■□■□■□■□■□■□■　麻衣＆玲緒　□■□■□■□■□■□■□■□■□■□■
+item:	4	cg_p_09			ev09,ev09p1
+item:	4	cg_p_67			ev67
+item:	4	cg_p_68			ev68,ev68p1
+item:	4	cg_p_69			ev69,ev69p1,ev69p2
+item:	4	cg_p_70			ev70,ev70p1
+item:	4	cg_p_71			ev71,ev71p1,ev71p2
+item:	4	cg_p_72			ev72,ev72p1,ev72p2
+item:	4	cg_p_73			ev73,ev73p1
+item:	4	cg_p_74			ev74,ev74p1
+item:	4	cg_p_75			ev75,ev75p1
+item:	4	cg_p_76			ev76,ev76p1
+item:	4	cg_p_77			ev77,ev77p1
+item:	4	cg_p_78			ev78,ev78p1
+item:	4	cg_p_79			ev79,ev79p1
+item:	4	cg_p_80			ev80,ev80p1
+//□■□■□■□■□■□■□■□■□■□■　その他　□■□■□■□■□■□■□■□■□■□■
+item:	5	cg_p_05			ev05,ev05p1
+item:	5	cg_p_06			ev06,ev06p1
+//□■□■□■□■□■□■□■□■□■□■　カットイン　□■□■□■□■□■□■□■□■□■□■
+item:	6	cg_p_cu01		cu01
+item:	6	cg_p_cu02		cu02
+item:	6	cg_p_cu03		cu03
+item:	6	cg_p_cu04		cu04
+item:	6	cg_p_cu05		cu05
+item:	6	cg_p_cu06		cu06
+item:	6	cg_p_cu07		cu07
+item:	6	cg_p_cu08		cu08,cu08p1
+item:	6	cg_p_cu09		cu09
+item:	6	cg_p_cu10		cu10
+item:	6	cg_p_cu11		cu11
+item:	6	cg_p_cu12		cu12
+item:	6	cg_p_cu13		cu13
+item:	6	cg_p_cu14		cu14
+item:	6	cg_p_cu15		cu15
+item:	6	cg_p_cu16		cu16
+item:	6	cg_p_cu17		cu17
+item:	6	cg_p_cu18		cu18
+item:	6	cg_p_cu19		cu19
+item:	6	cg_p_cu20		cu20
+

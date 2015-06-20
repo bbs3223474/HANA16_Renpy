@@ -1,0 +1,16 @@
+//	Yes/No ダイアログ
+
+//	背景
+//		imageにvoidを指定すると通常背景になる
+//		width,heightに0を指定するとイメージのサイズを使用する
+//		image		width	height
+image:	dialog		0		0
+
+//	キャプション
+//			y	color		fontsize
+caption:	16	0xa09090	20	true
+
+//	ボタン
+//		tag		image				x	y	overSE	downSE	cursor
+button:	yes		dialog_p_01			 20	120	void	void	void
+button:	no		dialog_p_02			160	120	void	void	void

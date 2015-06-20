@@ -1,0 +1,15 @@
+//	Log
+
+//	レイアウト
+//		messge	メッセージの表示位置	(tag/x/y/width/height/pitch)
+//		voice	音声再生マーク			(tag/image/x)
+//		back	背景の色				(tag/color)
+//		cursor	カーソルの色			(tag/color)
+layout:	message	72	24	660		528		24
+layout:	voice	log_voice	10
+layout:	back	0xc0000000
+layout:	cursor	0x80808080
+
+//		tag			baseimage		pinimage			x	y	overSE	downSE	cursor
+slider:	scrollbar	log_p			log_p_pin			768 0	void	void	void
+

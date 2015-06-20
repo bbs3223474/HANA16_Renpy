@@ -1,0 +1,87 @@
+//	Sceneモード画面
+
+//	背景
+//		image
+image:	ex_scene
+
+//	ボタン
+//		tag:
+//			tab		項目切り替えタブ
+//			page	ページ切り替えボタン
+//			return	CGモード終了ボタン
+//		image:
+//			ボタン画像
+//		x,y:
+//			表示位置
+//		cursor:
+//			マウスオーバー時のカーソル形状
+//			voidを指定するとsetting.txtで指定したデフォルトのまま変更しない
+//		tag2:
+//			0～		tag=tab:タブ番号
+//					tag=page:ページを直接選択するボタン
+//			back	前のページボタン
+//			next	次のページボタン
+
+//		tag		image		x	y	overSE	downSE	cursor		tag2
+button:	tab		ex_p_c01	10	90	void	void	void		0
+button:	tab		ex_p_c02	10	130	void	void	void		1
+button:	tab		ex_p_c03	10	170	void	void	void		2
+button:	tab		ex_p_c04	10	210	void	void	void		3
+button:	tab		ex_p_c05	10	250	void	void	void		4
+//button:	tab		cgmode_tab1			0	192	void	void	void		1
+//button:	tab		cgmode_tab2			0	296	void	void	void		2
+//button:	page	saveloadpage1		120	550	void	void	void		0
+//button:	page	ex_p_01		40	560	void	void	void		0
+//button:	page	ex_p_02		70	560	void	void	void		1
+button:	return	ex_p_10		640 560	void	void	void
+
+//	レイアウト
+//		tag:
+//			page	ページレイアウト
+//		横,縦:
+//			横、縦の項目数
+//		x,y:
+//			表示位置
+//		pitchx,pitchy:
+//			表示間隔位置
+//		cursor:
+//			マウスオーバー時のカーソル形状
+//			voidを指定するとsetting.txtで指定したデフォルトのまま変更しない
+
+//		tag		横	縦	x	y	pitchx	pitchy	overSE	downS	cursor
+layout:	page	3	3	230	110	180		140		void	void	void
+layout:	all			caption		ex_p_0					808 536
+
+//	項目
+//		tab:
+//			0～	タブに関連付けされる
+//		image:
+//			ボタン画像
+//		label:
+//			ファイル名:ラベル名
+
+//		tab	image		label
+//□■□■□■□■□■□■□■□■□■□■　六夏＆沙雪　□■□■□■□■□■□■□■□■□■□■
+item:	0	scene_p_0_1	S041:hscene
+item:	0	scene_p_0_2	S045:hscene
+item:	0	scene_p_0_3	S049:hscene
+item:	0	scene_p_0_4	S050:hscene
+item:	0	scene_p_0_5	S051:hscene
+//□■□■□■□■□■□■□■□■□■□■　璃紗＆美夜　□■□■□■□■□■□■□■□■□■□■
+item:	1	scene_p_1_1	S055:hscene
+item:	1	scene_p_1_2	S059:hscene
+item:	1	scene_p_1_3	S067:hscene
+item:	1	scene_p_1_4	S068:hscene
+//□■□■□■□■□■□■□■□■□■□■　七海＆優菜　□■□■□■□■□■□■□■□■□■□■
+item:	2	scene_p_2_1	S076:hscene
+item:	2	scene_p_2_2	S080:hscene
+item:	2	scene_p_2_3	S083:hscene
+item:	2	scene_p_2_4	S083:hscene2
+//□■□■□■□■□■□■□■□■□■□■　楓＆紗良　□■□■□■□■□■□■□■□■□■□■
+item:	3	scene_p_3_1	S092:hscene
+item:	3	scene_p_3_2	S096:hscene
+item:	3	scene_p_3_3	S101:hscene
+//□■□■□■□■□■□■□■□■□■□■　麻衣＆玲緒　□■□■□■□■□■□■□■□■□■□■
+item:	4	scene_p_4_1	S108:hscene
+item:	4	scene_p_4_2	S112:hscene
+item:	4	scene_p_4_3	S118:hscene

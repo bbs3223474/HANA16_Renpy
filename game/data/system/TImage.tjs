@@ -1,0 +1,517 @@
+//==============================================================
+//	TImage
+//==============================================================
+class TImage{
+
+	var owner;
+	var id;
+	var layer,origLayer;
+	var layer2,origLayer2;
+
+	var move;
+	var alpha;
+	var zoom;
+	var anime;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TImage(owner,id,center,order=-1){
+		this.owner=owner;
+		this.id=id;
+		layer=new TLayer(tWindow,owner);
+		layer.type=ltAlpha;
+		move=new Dictionary();
+		alpha=new Dictionary();
+		zoom=new Dictionary();
+		anime=new Dictionary();
+		tLocalData.setImageDefault(id,center,order);
+		setSize(1);
+		initialize();
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		delete layer;
+		delete layer2;
+		delete move;
+		delete alpha;
+		delete zoom;
+		delete anime;
+	}
+
+	//--------------------------------------------------------------
+	//	初期化
+	//--------------------------------------------------------------
+	function initialize(){
+		tLocalData.clearImage(id);
+
+		layer.hasImage=false;										//	Image破棄
+		layer.hasImage=true;
+		layer.absolute=getOrder();
+		layer.visible=false;
+		if(layer2!==void){
+			layer2.hasImage=false;									//	Image破棄
+			layer2.hasImage=true;
+			layer2.absolute=getOrder()+1;
+			layer2.visible=false;
+		}
+
+		move.flag=false;
+		alpha.flag=false;
+		stopAnime();
+	}
+
+	function initializeWidthStatus(status){
+	}
+
+	//--------------------------------------------------------------
+	//	イメージを読み込み、破棄
+	//--------------------------------------------------------------
+	function loadImageSub(filename){
+		var result=true;
+		if(tLocalData.getImageFilename(id)!=filename){
+			try{
+				layer.loadImages(filename);
+				layer.setSizeToImageSize();
+				if(id=='bg'){
+					//	BGレイヤでサムネイル用データが存在する場合は読み込む
+					if(Storages.getPlacedPath(filename+"_thumbnail.png")!=""||Storages.getPlacedPath(filename+"_thumbnail.jpg")!=""||Storages.getPlacedPath(filename+"_thumbnail.tlg")!=""){
+						if(layer2===void){
+							layer2=new TLayer(tWindow,layer);
+							layer2.type=ltAlpha;
+						}
+						layer2.loadImages(filename+"_thumbnail");
+						layer2.setSizeToImageSize();
+					}else{
+						layer2=void;
+					}
+				}
+				tLocalData.setImageFilename(id,filename);
+				var size=tLocalData.getImageSize(id);
+				if(size!=1||zoom.flag){
+					if(origLayer===void){
+						origLayer=new TLayer(tWindow,owner);
+						origLayer.type=ltAlpha;
+						if(layer2!==void){
+							origLayer2=new TLayer(tWindow,owner);
+							origLayer2.type=ltAlpha;
+							origLayer2.setSize(layer2.width,layer2.height);
+							origLayer2.copyRect(0,0,layer2,0,0,layer2.width,layer2.height);
+						}
+					}
+					origLayer.setSize(layer.width,layer.height);
+					origLayer.copyRect(0,0,layer,0,0,layer.width,layer.height);
+					if(layer2!==void){
+						origLayer2.setSize(layer2.width,layer2.height);
+						origLayer2.copyRect(0,0,layer2,0,0,layer2.width,layer2.height);
+					}
+					var x;
+					if(getCenter()){
+						x=layer.left+layer.width\2;
+					}
+					layer.setSize(origLayer.width*size,origLayer.height*size);
+					layer.stretchCopy(0,0,origLayer.width*size,origLayer.height*size,origLayer,0,0,origLayer.width,origLayer.height);
+					if(layer2!==void){
+						layer2.setSize(origLayer2.width*size,origLayer2.height*size);
+						layer2.stretchCopy(0,0,origLayer2.width*size,origLayer2.height*size,origLayer2,0,0,origLayer2.width,origLayer2.height);
+					}
+					if(x!==void){
+						layer.left=x-layer.width\2;
+						if(layer2!==void){
+							layer2.left=x-layer2.width\2;
+						}
+					}
+				}
+			}catch{
+				if(!isDebug()){
+					System.inform("TImage::loadImageSub\nfile not found:"+filename);
+				}
+				tLocalData.setImageFilename(id,void);
+				layer.hasImage=false;								//	Image破棄
+				layer.hasImage=true;
+				result=false;
+			}
+		}
+		return result;
+	}
+
+	function loadImage(filename){
+		var color=TImageGetColor(filename);
+
+		tLocalData.setImageColor(id,color);
+		if(!color){
+			loadImageSub(filename);
+		}else{
+			tLocalData.setImageFilename(id,"");
+			layer.setSize(tSettings.canvasWidth,tSettings.canvasHeight);
+			layer.fillRect(0,0,layer.width,layer.height,color);
+			layer2=void;
+		}
+		setVisible(true);
+	}
+
+	function destroyImage(){
+		tLocalData.setImageFilename(id,void);
+		tLocalData.setImageX(id,0);
+		tLocalData.setImageY(id,0);
+		tLocalData.setImageColor(id,0);
+		tLocalData.setImageVisible(id,false);
+
+		layer.hasImage=false;										//	Image破棄
+		layer.hasImage=true;
+		layer.visible=false;
+		layer2=void;
+	}
+
+	//--------------------------------------------------------------
+	//	親の変更
+	//--------------------------------------------------------------
+	function changeParent(parent){
+		layer.parent=parent;
+		layer.absolute=getOrder();
+		if(layer2!==void){
+			layer2.parent=parent;
+			layer2.absolute=getOrder()+1;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	ステータス
+	//--------------------------------------------------------------
+	function setXY(x,y){
+		layer.setPos(getCenter()?x-layer.width\2:x,y);
+		if(layer2!==void){
+			layer2.setPos(getCenter()?x-layer2.width\2:x,y);
+		}
+		tLocalData.setImageX(id,x);
+		tLocalData.setImageY(id,y);
+	}
+
+	function setX(x){
+		layer.left=getCenter()?x-layer.width\2:x;
+		if(layer2!==void){
+			layer2.left=getCenter()?x-layer2.width\2:x;
+		}
+		tLocalData.setImageX(id,x);
+	}
+
+	function setY(x,y){
+		layer.top=y;
+		if(layer2!==void){
+			layer2.top=y;
+		}
+		tLocalData.setImageY(id,y);
+	}
+
+	function addXY(x,y){
+		setXY(getX()+x,getY()+y);
+	}
+
+	function addX(x){
+		setX(getX()+x);
+	}
+
+	function addY(y){
+		setY(getY()+y);
+	}
+
+	function getX(){
+		return tLocalData.getImageX(id);
+	}
+
+	function getY(){
+		return tLocalData.getImageY(id);
+	}
+
+	function setCenter(flag){
+		tLocalData.setImageCenter(id,flag);
+		setXY(getX(),getY());
+
+	}
+
+	function getCenter(){
+		return tLocalData.getImageCenter(id);
+	}
+
+	function setOrder(value){
+		tLocalData.setImageOrder(id,layer.absolute=value);
+		if(layer2!==void){
+			layer2.absolute=value+1;
+		}
+	}
+
+	function getOrder(value){
+		return 	tLocalData.getImageOrder(id);
+	}
+
+	function setSize(size){
+		tLocalData.setImageSize(id,size);
+	}
+
+	function getSize(){
+		return tLocalData.getImageSize(id);
+	}
+
+	function getWidth(){
+		return layer.width;
+	}
+
+	function getHeight(){
+		return layer.height;
+	}
+
+	function setVisible(flag){
+		tLocalData.setImageVisible(id,layer.visible=flag);
+	}
+
+	function getVisible(){
+		return tLocalData.getImageVisible(id);
+	}
+
+	function setVisible2(flag){
+		if(layer2!==void){
+			layer2.bringToFront();
+			layer2.visible=flag;
+		}
+	}
+
+
+	//--------------------------------------------------------------
+	//	アニメーション
+	//--------------------------------------------------------------
+	function setMove(x,y,time=1000){
+		move.flag=true;
+		move.x=getX();
+		move.y=getY();
+		tLocalData.setImageX(id,x);
+		tLocalData.setImageY(id,y);
+		move.startTime=System.getTickCount();
+		move.endTime=move.startTime+time;
+	}
+
+	function isMove(){
+		return move.flag;
+	}
+
+	function setAlpha(value,time=1000){
+		if(time==0){
+			tLocalData.setImageAlpha(id,layer.opacity=range255(value));
+			if(layer2!==void){
+				layer2.opacity=range255(value);
+			}
+		}else{
+			alpha.flag=true;
+			alpha.start=tLocalData.getImageAlpha(id);
+			tLocalData.setImageAlpha(id,value);
+			alpha.startTime=System.getTickCount();
+			alpha.endTime=alpha.startTime+time;
+		}
+	}
+
+	function isAlpha(){
+		return alpha.flag;
+	}
+
+	function cancelAnime(){
+		if(zoom.flag){
+			var size=getSize()*1000;
+			zoom.flag=false;
+			layer.setSize(origLayer.width*size/1000,origLayer.height*size/1000);
+			layer.stretchCopy(0,0,origLayer.width*size/1000,origLayer.height*size/1000,origLayer,0,0,origLayer.width,origLayer.height);
+			if(layer2!==void){
+				layer2.setSize(origLayer2.width*size/1000,origLayer2.height*size/1000);
+				layer2.stretchCopy(0,0,origLayer2.width*size/1000,origLayer2.height*size/1000,origLayer2,0,0,origLayer2.width,origLayer2.height);
+			}
+		}
+		move.flag=false;
+		setXY(tLocalData.getImageX(id,x),tLocalData.getImageY(id,y));
+		alpha.flag=false;
+		layer.opacity=tLocalData.getImageAlpha(id);
+		if(layer2!==void){
+			layer.opacity=tLocalData.getImageAlpha(id);
+		}
+	}
+
+	function setZoom(size,time=1000){
+		if(origLayer===void){
+			origLayer=new TLayer(tWindow,owner);
+			origLayer.type=ltAlpha;
+			origLayer.setSize(layer.width,layer.height);
+			origLayer.copyRect(0,0,layer,0,0,layer.width,layer.height);
+			if(layer2!==void){
+				origLayer2=new TLayer(tWindow,owner);
+				origLayer2.type=ltAlpha;
+				origLayer2.setSize(layer2.width,layer2.height);
+				origLayer2.copyRect(0,0,layer2,0,0,layer2.width,layer2.height);
+			}
+		}
+		zoom.flag=true;
+		zoom.size=getSize();
+		tLocalData.setImageSize(id,size);
+		zoom.startTime=System.getTickCount();
+		zoom.endTime=zoom.startTime+time;
+	}
+
+	function isZoom(){
+		return zoom.flag;
+	}
+
+	function setAnime(pattern){
+		anime.pattern=tScript.animetionTable[pattern];
+		anime.counter=0;
+		anime.timer=0;
+		tLocalData.setImageAnime(id,pattern);
+	}
+
+	function stopAnime(){
+		anime.counter=-1;
+		tLocalData.setImageAnime(id,void);
+	}
+
+	//--------------------------------------------------------------
+	//	property
+	//--------------------------------------------------------------
+	property x{
+		setter(x){setX(x);}
+		getter(){return getX();}
+	}
+
+	property y{
+		setter(y){setY(y);}
+		getter(){return getY();}
+	}
+
+	property center{
+		setter(flag){setCenter(flag);}
+		getter(){return getCenter();}
+	}
+
+	property order{
+		setter(value){setOrder(value);}
+		getter(){return getOrder();}
+	}
+
+	property width{
+		getter(){return layer.width;}
+	}
+
+	property height{
+		getter(){return layer.height;}
+	}
+
+	property visible{
+		setter(flag){setVisible(flag);}
+		getter(){return getVisible();}
+	}
+
+	//--------------------------------------------------------------
+	//	tick
+	//--------------------------------------------------------------
+	function tick(){
+		var time;
+		if(!tScript.isNext()&&anime.counter>=0){
+			if(time===void){time=System.getTickCount();}
+			if(time>=anime.timer){
+				while(1){
+					if(anime.pattern[anime.counter]=="goto"){
+						anime.counter=+anime.pattern[anime.counter+1];
+					}else if(anime.pattern[anime.counter]=="end"){
+						anime.counter=-1;
+						tLocalData.setImageAnime(id,void);
+						break;
+					}else{
+						var image=anime.pattern[anime.counter++];
+						anime.timer=time+ +anime.pattern[anime.counter++];
+						loadImageSub(image);
+						setX(getX());
+//						if(zoom.flag){
+//							origLayer.setSize(layer.width,layer.height);
+//							origLayer.copyRect(0,0,layer,0,0,layer.width,layer.height);
+//						}
+						break;
+					}
+				}
+			}
+		}
+		if(move.flag){
+			if(time===void){time=System.getTickCount();}
+			var x=getCurrent(time,move.startTime,move.endTime,move.x,getX());
+			var y=getCurrent(time,move.startTime,move.endTime,move.y,getY());
+			if(time>=move.endTime){
+				x=getX();
+				y=getY();
+				move.flag=false;
+			}
+			layer.setPos(getCenter()?x-layer.width\2:x,y);
+			if(layer2!==void){
+				layer2.setPos(getCenter()?x-layer2.width\2:x,y);
+			}
+		}
+		if(alpha.flag){
+			if(time===void){time=System.getTickCount();}
+			var opacity=range255(getCurrent(time,alpha.startTime,alpha.endTime,alpha.start,tLocalData.getImageAlpha(id)));
+			if(time>=alpha.endTime){
+				opacity=tLocalData.getImageAlpha(id);
+				alpha.flag=false;
+			}
+			layer.opacity=opacity;
+			if(layer2!==void){
+				layer2.opacity=opacity;
+			}
+		}
+		if(!tScript.isNext()&&zoom.flag){
+			if(time===void){time=System.getTickCount();}
+			var size=getCurrent(time,zoom.startTime,zoom.endTime,zoom.size*1000,getSize()*1000);
+			if(time>=zoom.endTime){
+				size=tLocalData.getImageSize(id)*1000;
+				zoom.flag=false;
+			}
+			var x;
+			if(getCenter()){
+				x=layer.left+layer.width\2;
+			}
+			layer.setSize(origLayer.width*size/1000,origLayer.height*size/1000);
+			layer.stretchCopy(0,0,origLayer.width*size/1000,origLayer.height*size/1000,origLayer,0,0,origLayer.width,origLayer.height);
+			if(layer2!==void){
+				layer2.setSize(origLayer2.width*size/1000,origLayer2.height*size/1000);
+				layer2.stretchCopy(0,0,origLayer2.width*size/1000,origLayer2.height*size/1000,origLayer2,0,0,origLayer2.width,origLayer2.height);
+			}
+			if(x!==void){
+				layer.left=x-layer.width\2;
+				if(layer2!==void){
+					layer2.left=x-layer2.width\2;
+				}
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	現在位置
+	//--------------------------------------------------------------
+	function getCurrent(currentTime,startTime,endTime,startPoint,endPoint){
+		if(endTime-startTime){
+			return (int)(+startPoint+(+endPoint-+startPoint)*(+currentTime-+startTime)/(+endTime-+startTime)+0.5);
+		}else{
+			return +endPoint;
+		}
+	}
+}
+
+function TImageGetColor(filename){
+	var color=0;
+	if(filename=="black"){			color=0xff000000;
+	}else if(filename=="blue"){		color=0xff0000ff;
+	}else if(filename=="green"){	color=0xff00ff00;
+	}else if(filename=="aqua"){		color=0xff00ffff;
+	}else if(filename=="red"){		color=0xffff0000;
+	}else if(filename=="purple"){	color=0xffff00ff;
+	}else if(filename=="yellow"){	color=0xffffff00;
+	}else if(filename=="white"){	color=0xffffffff;
+	}else if(filename=="gray"){		color=0xff808080;
+	}else if(filename.substring(0,2)=="0x"){color=calc(filename);
+	}
+	return color;
+}

@@ -1,0 +1,150 @@
+//==============================================================
+//	TSettings
+//==============================================================
+//--------------------------------------------------------------
+//	ê›íËì«Ç›çûÇ›
+//--------------------------------------------------------------
+class TSettings{
+
+	var FileSettings="settings.txt";
+
+	var title;
+	var canvasWidth,canvasHeight;
+	var screenCenter;
+	var messageWindowLeft,messageWindowTop,messageOffsetLeft,messageOffsetTop,messageWidth;
+	var nameWindowLeft,nameWindowTop,nameOffsetLeft,nameOffsetTop;
+	var novelOffsetLeft,novelOffsetTop,novelWidth;
+	var pageWaitLeft,pageWaitTop,pageWaitDivition,pageWaitSpeed;
+	var fontFace,fontColor,fontOutline,fontOutlineColor,fontShadow,fontShadowColor,fontBold;
+	var pageWaitLeft,pageWaitTop;
+	var quickSaveOffset,quickSaveCount,autoSaveOffset,autoSaveCount;
+	var cursorDefault,cursorDefaultSelect,cursorDefaultMap;
+	var buttonOverSE,buttonDownSE;
+	var sysVoiceDefault=void;
+	var changeSpeed=16;
+	var face;	//Åöface
+	var filter;	//Åöfilter
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TSettings(){
+if(isDebug())Debug.console.visible=true;
+		var array=new Array();
+		var keypattern=new RegExp("([^\t ]*)(.*)");
+		array.load(FileSettings);
+		for(var i=0;i<array.count;i++){
+			var item=array[i];
+			var temp=keypattern.match(item);
+			if(temp.count==3){
+				var key=temp[1].trim();
+				var obj=(new RegExp("//.*")).replace(temp[2],"").trim();
+				if(key=="Title"){				title=obj;
+				}else if(key=="CanvasWidth"){	canvasWidth=+obj;
+				}else if(key=="CanvasHeight"){	canvasHeight=+obj;
+				}else if(key=="ScreenCenter"){	screenCenter=obj=="true"?true:false;
+
+				}else if(key=="MessageWindowLeft"){	messageWindowLeft=+obj;
+				}else if(key=="MessageWindowTop"){	messageWindowTop=+obj;
+				}else if(key=="MessageOffsetLeft"){	messageOffsetLeft=+obj;
+				}else if(key=="MessageOffsetTop"){	messageOffsetTop=+obj;
+				}else if(key=="MessageWidth"){		messageWidth=+obj;
+				}else if(key=="NameWindowLeft"){	nameWindowLeft=+obj;
+				}else if(key=="NameWindowTop"){		nameWindowTop=+obj;
+				}else if(key=="NameOffsetLeft"){	nameOffsetLeft=+obj;
+				}else if(key=="NameOffsetTop"){		nameOffsetTop=+obj;
+				}else if(key=="NovelOffsetLeft"){	novelOffsetLeft=+obj;
+				}else if(key=="NovelOffsetTop"){	novelOffsetTop=+obj;
+				}else if(key=="NovelWidth"){		novelWidth=+obj;
+				}else if(key=="PageWaitLeft"){		pageWaitLeft=+obj;
+				}else if(key=="PageWaitTop"){		pageWaitTop=+obj;
+				}else if(key=="PageWaitDivision"){	pageWaitDivition=+obj;
+				}else if(key=="PageWaitSpeed"){		pageWaitSpeed=+obj;
+
+				}else if(key=="FontFace"){		fontFace=obj;
+				}else if(key=="FontColor"){		fontColor=obj;
+				}else if(key=="FontOutline"){		fontOutline=obj;
+				}else if(key=="FontOutlineColor"){		fontOutlineColor=obj;
+				}else if(key=="FontShadow"){		fontShadow=obj;
+				}else if(key=="FontShadowColor"){		fontShadowColor=obj;
+				}else if(key=="FontBold"){		if(obj==='true'){fontBold=true;}else{fontBold=false;}
+
+				}else if(key=="QuickSaveOffset"){	quickSaveOffset=+obj;
+				}else if(key=="QuickSaveCount"){	quickSaveCount=+obj;
+				}else if(key=="AutoSaveOffset"){	autoSaveOffset=+obj;
+				}else if(key=="AutoSaveCount"){		autoSaveCount=+obj;
+
+				}else if(key=="CursorDefault"){		cursorDefault=obj;
+				}else if(key=="CursorDefaultSelect"){cursorDefaultSelect=obj;
+				}else if(key=="CursorDefaultMap"){	cursorDefaultMap=obj;
+
+				}else if(key=="ButtonOverSE"){		buttonOverSE=obj=="void"?void:obj;
+				}else if(key=="ButtonDownSE"){		buttonDownSE=obj=="void"?void:obj;
+
+				}else if(key=="defaultsysv"){		sysVoiceDefault=obj;
+				}
+			}
+		}
+		//Åöfaceê›íËì«Ç›çûÇ›
+		face=new Dictionary();
+		face.chara=new Dictionary();
+		var text=new Array();
+		var comment=new RegExp("[\t ]*//.*");
+		var separater=new RegExp("(^[^:]*):(.*)");
+		var separaterSpace=new RegExp("^(.*)[\t ]+(.*)");
+		try{
+			text.load(FileFaceSetting);
+			for(var i=0;i<text.count;i++){
+				var str=comment.replace(text[i].trim(),"");
+				if(str.length){
+					var array=separater.match(str);
+					if("layout"==array[1]){
+						var params=array[2].split(' \t',,true);
+						if(params[0]!=='void') face.prefix = params[0];
+						else face.prefix = "";
+						face.x = +params[1];
+						face.y = +params[2];
+					}else if("chara"==array[1]){
+						var params=array[2].split(' \t',,true);
+						face.chara[params[0]] = params[1];
+					}
+				}
+			}
+		}catch(e){
+		}
+
+		//Åöfilterê›íËì«Ç›çûÇ›
+		filter=new Dictionary();
+		filter.outside=new Array();
+		var text=new Array();
+		var comment=new RegExp("[\t ]*//.*");
+		var separater=new RegExp("(^[^:]*):(.*)");
+		var separaterSpace=new RegExp("^(.*)[\t ]+(.*)");
+		try{
+			text.load(FileFilterSetting);
+			for(var i=0;i<text.count;i++){
+				var str=comment.replace(text[i].trim(),"");
+				if(str.length){
+					var array=separater.match(str);
+					if("filter"==array[1]){
+						var params=array[2].split(' \t',,true);
+						filter[params[0]]=new Array();
+						for(var j=1;j<params.length;j++){
+							filter[params[0]][j-1]=params[j];
+						}
+					}else if("outside"==array[1]){
+						//dm(array[2].trim());
+						filter.outside.add(array[2].trim());
+					}
+				}
+			}
+		}catch(e){
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+	}
+}

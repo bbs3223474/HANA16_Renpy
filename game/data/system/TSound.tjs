@@ -1,0 +1,602 @@
+//==============================================================
+//	TSound
+//==============================================================
+Plugins.link("wuvorbis.dll");
+
+class TSound{
+
+	var owner;
+	var track;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TSound(owner){
+		this.owner=owner;
+		track=new Dictionary();
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		delete track;
+	}
+
+	//--------------------------------------------------------------
+	//	再生、停止
+	//--------------------------------------------------------------
+	function play(trackname,filename,volume,loop=0,intime=0,outtime=0){
+
+		if(filename.substr(0,3)==='***'){
+			filename=tGlobalData.data.environment.sysVoice+filename.substr(3);
+			if(filename.substr(0,3)==='def'){
+				return;
+			}
+		}
+
+		if(track[trackname]===void){
+			var func;
+			if(/^bgm/.test(trackname)){
+				func=tGlobalData.getVolumeBGM;
+			}else if(/^se/.test(trackname)){
+				func=tGlobalData.getVolumeSE;
+			}else if(/^voice/.test(trackname)){
+				func=tGlobalData.getVolumeVoice;
+			}else if(/^bgvoice/.test(trackname)){
+				func=tGlobalData.getVolumeBgVoice;
+			}
+			track[trackname]=new TSoundBuffer(owner,func);
+		}
+
+		if(tGameSystem.isSkip()){
+			intime=0;
+			outtime=0;
+		}
+
+		//バックグラウンドボイス再生
+		if(/^bgvoice/.test(trackname)){
+			var temp=[];
+			temp.assign(tGlobalData.data.environment);
+			for(var i=0;i<temp.count;i+=2){
+				if(temp[i].substring(0,8)=="voiceoff"){
+					if(filename.indexOf(temp[i].substring(9))==0){
+						if(temp[i+1]){
+							//	voiceoff が設定されたファイルなので再生しない。ただし、再生中のバックグラウンドボイスは停止する（上書きの代わり
+							if(tScript.bgvoiceCollision>0){
+								stopBgVoice();
+								tScript.bgvoiceCollision=0;
+							}
+							return;
+						}
+					}
+				}
+			}
+
+			//	個別に音量を調節する
+			temp.assign(tGlobalData.data.environment.charvolume);
+			for(var i=0;i<temp.count;i+=2){
+				var tag=filename.substring(0,temp[i].length);
+				if(tag==temp[i]){
+					volume=volume*tGlobalData.getVolumeCharRow(tag)\100;
+					break;
+				}
+			}
+
+			if(loop==0) tScript.bgvoiceCollision=1;	//ループ時
+			else tScript.bgvoiceCollision=2;	//1回のみ
+		}
+
+		//ボイス再生
+		if(/^voice/.test(trackname)){
+			//dm("voice filename:"+filename);
+			var temp=[];
+			temp.assign(tGlobalData.data.environment);
+			for(var i=0;i<temp.count;i+=2){
+				if(temp[i].substring(0,8)=="voiceoff"){
+					if(filename.indexOf(temp[i].substring(9))==0){
+						if(temp[i+1]){
+							//	voiceoff が設定されたファイルなので再生しない
+							return;
+						}
+					}
+				}
+			}
+
+			//	bgv中に同一キャラクターのボイスを再生する場合は、bgvを一時停止
+			if(isPlayBgVoice()&&track['bgvoice'].file.substr(0,3)==filename.substr(0,3)){
+				if(tScript.bgvoiceCollision==1) tScript.bgvoiceCollision=5;
+				else if(tScript.bgvoiceCollision==2) tScript.bgvoiceCollision=0;
+				stopBgVoice();
+			}
+
+			//	個別に音量を調節する
+			temp.assign(tGlobalData.data.environment.charvolume);
+			for(var i=0;i<temp.count;i+=2){
+				var tag=filename.substring(0,temp[i].length);
+				if(tag==temp[i]){
+					volume=volume*tGlobalData.getVolumeCharRow(tag)\100;
+					break;
+				}
+			}
+		}
+		track[trackname].play(filename+ExtSound,volume,loop,intime,outtime);
+	}
+
+	function stop(trackname,time=0){
+		if(track[trackname]===void){
+			return;
+		}
+		track[trackname].stop(time);
+	}
+
+	function pause(trackname){
+		if(track[trackname]===void){
+			return;
+		}
+		track[trackname].pause();
+	}
+
+	function replay(trackname){
+		if(track[trackname]===void){
+			return;
+		}
+		track[trackname].replay();
+	}
+
+	function volume(trackname){
+		if(track[trackname]===void){
+			return;
+		}
+		track[trackname].renewVolume();
+	}
+
+	function fade(trackname,volume,time,delay=0){
+		if(track[trackname]===void){
+			return;
+		}
+		track[trackname].fade(volume,time,delay);
+	}
+
+	function stopBGM(time=0){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^bgm/.test(temp[i])){
+				stop(temp[i],time);
+			}
+		}
+	}
+
+	function pauseBGM(){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^bgm/.test(temp[i])){
+				pause(temp[i]);
+			}
+		}
+	}
+
+	function replayBGM(){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			var tracknum=i\2;
+			if(/^bgm/.test(temp[i]) && tLocalData.data.script.bgm[tracknum]!==void){
+//				replay(temp[i]);
+				if(track[temp[i]].paused==tLocalData.data.script.bgm[tracknum].pause){
+					replay(temp[i]);
+				}else{
+					play(temp[i],tLocalData.data.script.bgm[tracknum].name,tLocalData.data.script.bgm[tracknum].volume,tLocalData.data.script.bgm[tracknum].count);
+				}
+			}
+		}
+	}
+
+	function volumeBGM(){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^bgm/.test(temp[i])){
+				volume(temp[i]);
+			}
+		}
+	}
+
+	function stopSE(time=0){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^se/.test(temp[i])){
+				stop(temp[i],time);
+			}
+		}
+	}
+	function stopSE2(time=0){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^se/.test(temp[i])){
+				if(!/^sebtnup/.test(temp[i])){
+					stop(temp[i],time);
+				}
+			}
+		}
+	}
+
+	function pauseSE(){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^se/.test(temp[i])){
+				pause(temp[i]);
+			}
+		}
+	}
+
+	function replaySE(){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^se/.test(temp[i])){
+				replay(temp[i]);
+			}
+		}
+	}
+
+	function volumeSE(){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^se/.test(temp[i])){
+				volume(temp[i]);
+			}
+		}
+	}
+
+	function stopVoice(time=0){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^voice/.test(temp[i])){
+				stop(temp[i],time);
+			}
+		}
+	}
+
+	function pauseVoice(){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^voice/.test(temp[i])){
+				pause(temp[i]);
+			}
+		}
+	}
+
+	function replayVoice(){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^voice/.test(temp[i])){
+				replay(temp[i]);
+			}
+		}
+	}
+
+	function volumeVoice(){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^voice/.test(temp[i])){
+				volume(temp[i]);
+			}
+		}
+	}
+
+	function fadeBGM(volume,time,delay=0){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^bgm/.test(temp[i])){
+				fade(temp[i],volume,time,delay=0);
+			}
+		}
+	}
+
+	function fadeSE(volume,time,delay=0){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^se/.test(temp[i])){
+				fade(temp[i],volume,time,delay=0);
+			}
+		}
+	}
+
+	function fadeVoice(volume,time,delay=0){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^voice/.test(temp[i])){
+				fade(temp[i],volume,time,delay=0);
+			}
+		}
+	}
+
+//バックグラウンドボイス
+	function stopBgVoice(time=0,compulsion=false){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^bgvoice/.test(temp[i])){
+				stop(temp[i],time);
+			}
+		}
+		if(tScript.bgvoiceCollision!=5||compulsion) tScript.bgvoiceCollision=0;
+	}
+
+	function pauseBgVoice(){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^bgvoice/.test(temp[i])){
+				pause(temp[i]);
+			}
+		}
+		if(tScript.bgvoiceCollision==2) tScript.bgvoiceCollision=3;
+		else tScript.bgvoiceCollision=4;
+	}
+
+	function replayBgVoice(){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^bgvoice/.test(temp[i])){
+				replay(temp[i]);
+			}
+		}
+		if(tScript.bgvoiceCollision==3) tScript.bgvoiceCollision=2;
+		else tScript.bgvoiceCollision=1;
+	}
+
+	function volumeBgVoice(){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^bgvoice/.test(temp[i])){
+				volume(temp[i]);
+			}
+		}
+	}
+
+	function fadeBgVoice(volume,time,delay=0){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^bgvoice/.test(temp[i])){
+				fade(temp[i],volume,time,delay=0);
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	ステータス
+	//--------------------------------------------------------------
+	function isPlay(trackname){
+		if(track[trackname]===void){
+			return false;
+		}
+		return track[trackname].status=="play";
+	}
+
+	function isPlayBGM(){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/bgm/.test(temp[i])){
+				if(isPlay(temp[i])){
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	function isPlaySE(){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/se/.test(temp[i])){
+				if(isPlay(temp[i])){
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	function isPlayVoice(){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/^voice/.test(temp[i])){
+				if(isPlay(temp[i])){
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	function isPlayBgVoice(){
+		var temp=[];
+		temp.assign(track);
+		for(var i=0;i<temp.count;i+=2){
+			if(/bgvoice/.test(temp[i])){
+				if(isPlay(temp[i])){
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+}
+
+//==============================================================
+//	TSoundBuffer
+//==============================================================
+class TSoundBuffer extends WaveSoundBuffer{
+
+	var current;
+	var next;
+	var currentVolume;
+	var funcVolume;
+	var file;	//現在再生中のファイル名を覚えておく
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TSoundBuffer(owner,funcVolume){
+		super.WaveSoundBuffer(...);
+		super.globalFocusMode=sgfmMuteOnMinimize;
+		current=new Dictionary();
+		next=new Dictionary();
+		this.funcVolume=funcVolume;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		super.stop();
+		super.finalize(...);
+		delete current;
+		delete next;
+	}
+
+	//--------------------------------------------------------------
+	//	再生、停止
+	//--------------------------------------------------------------
+	function play(filename,volume,loop=0,intime=0,outtime=0,direct=false){
+		file=filename;
+		if(!direct){
+			//	パラメータ設定
+			next.filename=filename;
+			next.volume=volume;
+			next.loop=loop==0?-1:loop;
+			next.intime=intime;
+
+			//	フェードアウトしてからの再生か
+			if(status=="play"){
+				if(outtime){
+					if(current.fadeout){
+						//super.stopFade();
+						return;
+					}
+					stop(outtime);
+					return;
+				}else{
+					next.filename=void;
+					super.stopFade();
+					next.filename=filename;
+					stop();
+				}
+			}
+		}
+
+		//	再生
+		(Dictionary.assign incontextof current)(next,false);
+		(Dictionary.clear incontextof next)();
+		super.open(current.filename);
+		super.volume=current.intime?0:current.volume*funcVolume();
+		current.play=true;
+		if(loop==0){
+			super.looping=true;
+		}else{
+			super.looping=false;
+		}
+		super.play();
+		if(current.intime){
+			super.fade(current.volume*funcVolume(),current.intime);
+		}
+	}
+
+	function stop(time=0){
+		current.play=false;
+		current.loop=0;
+		if(super.status=="play"){
+			if(time){
+				if(!current.fadeout){
+					var n=next.filename;
+					next.filename=void;
+					super.stopFade();
+					next.filename=n;
+					super.fade(0,time);
+					current.fadeout=true;
+				}
+			}else{
+				super.stop();
+				current.fadeout=false;
+			}
+		}else{
+			current.fadeout=false;
+		}
+	}
+
+	function pause(){
+		paused=true;
+	}
+
+	function replay(){
+		paused=false;
+	}
+
+	function fade(volume,time,delay=0){
+		current.volume=volume;
+		if(super.status=="play"){
+			super.fade(volume*funcVolume(),time,delay);
+		}else{
+			super.volume=volume*funcVolume();
+		}
+	}
+
+	function renewVolume(){
+		//dm(current.volume*funcVolume());
+		super.volume=current.volume*funcVolume();
+	}
+
+	//--------------------------------------------------------------
+	//	event
+	//--------------------------------------------------------------
+	function onStatusChanged(status){
+		if(status=="stop"){
+			if(current.play){
+				if(current.loop>0){
+					--current.loop;
+				}
+				if(current.loop!=0){
+					super.play();
+				}else{
+					current.play=false;
+					current.fadeout=false;
+				}
+			}
+		}
+	}
+
+	function onFadeCompleted(){
+		if(current.fadeout){
+			stop();
+			if(next.filename!==void){
+				play(next.filename,next.volume,next.loop,next.intime,0,true);
+			}
+			current.fadeout=false;
+		}
+	}
+
+	function onLabel(name){
+		//dm("onLabel:"+name);
+	}
+}

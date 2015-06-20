@@ -1,0 +1,879 @@
+//==============================================================
+//	Global Data
+//==============================================================
+class TGlobalData{
+
+	var data;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TGlobalData(){
+		data=new Dictionary();
+		data.environment=new Dictionary();
+		data.environment.charvolume=new Dictionary();
+		data.savecounter=new Dictionary();
+		data.flags=new Dictionary();
+		data.flags.global=new Array();
+		data.flags.select=new Dictionary();
+		data.flags.title=new Array();
+		data.flags.album=new Array();
+		data.flags.scene=new Array();
+		data.flags.bgm=new Array();
+		data.flags.kidoku=new Dictionary();
+
+		initializeEnvironmentSystem();
+		initializeEnvironmentSound();
+		initializeFlags();
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		delete data;
+	}
+
+	//--------------------------------------------------------------
+	//	初期化
+	//--------------------------------------------------------------
+	function initializeEnvironmentSystem(){
+		data.environment.messageSpeed=ConfigMessageSpeedDefault;	//	メッセージスピード
+		data.environment.autoSpeed=ConfigAutoSpeedDefault;			//	ページめくりスピード
+		data.environment.fullscreen=false;							//	false:ウィンドウ true:フルスクリーン
+		data.environment.movieoff=false;							//	false:ムービーを再生する ture:しない
+		data.environment.effectoff=false;							//	false:画面効果する true:しない
+		data.environment.kidokuoff=false;							//	false:既読のみスキップ true:全てスキップ
+		data.environment.skipoff=false;								//	false:選択肢後skip継続 true:skip解除
+		data.environment.autooff=false;								//	false:選択肢後auto継続 true:auto解除
+		data.environment.mbRight=ConfigmbRightHide;					//	右ボタンの設定
+		data.environment.winOpacity=153;						//	メッセージウィンドウの透過度
+		data.environment.fontFace=tSettings.fontFace;			//フォント
+		data.environment.fontBold=tSettings.fontBold;			//太字設定
+	}
+
+	function initializeEnvironmentSound(){
+		data.environment.masterVolume=ConfigMasterVolumeDefault;	//	マスターボリューム
+		data.environment.bgmVolume=ConfigBGMVolumeDefault;			//	BGMボリューム
+		data.environment.seVolume=ConfigSEVolumeDefault;			//	SEボリューム
+		data.environment.voiceVolume=ConfigVoiceVolumeDefault;		//	Voiceボリューム
+		data.environment.bgVoiceVolume=ConfigBgVoiceVolumeDefault;		//	BgVoiceボリューム
+		(Dictionary.clear incontextof data.environment.charvolume)();//	キャラごとのボリューム
+		data.environment.voicecut=true;								//	false:文章送り時に音声を継続 true:停止
+		data.environment.sysVoice=tSettings.sysVoiceDefault;					//	システムボイス
+
+		//	キャラ音声初期化
+		var temp=[];
+		temp.assign(data.environment);
+		for(var i=0;i<temp.count;i+=2){
+			if(temp[i].substring(0,8)=="voiceoff"){
+				data.environment[temp[i]]=false;
+			}
+		}
+	}
+
+	function initializeSaveCounter(){
+		data.savecounter.new=0;
+		data.savecounter.auto=0;
+		data.savecounter.quick=0;
+	}
+
+	function initializeFlags(){
+		clearGlobal();
+		clearSelect();
+		clearTitle();
+		clearAlbum();
+		clearBgm();
+		clearScene();
+		clearKidoku();
+	}
+
+	//--------------------------------------------------------------
+	//	volume
+	//--------------------------------------------------------------
+	function getVolumeBGM(){
+		return data.environment.masterVolume*data.environment.bgmVolume\10;
+	}
+
+	function getVolumeSE(){
+		return data.environment.masterVolume*data.environment.seVolume\10;
+	}
+
+	function getVolumeVoice(){
+		return data.environment.masterVolume*data.environment.voiceVolume\10;
+	}
+
+	//バックグラウンドボイス
+	function getVolumeBgVoice(){
+		return data.environment.masterVolume*data.environment.bgVoiceVolume\10;
+	}
+
+	function getVolumeChar(tag){
+		return data.environment.masterVolume*data.environment.voiceVolume*getVolumeCharRow(tag)\1000;
+	}
+
+	function getVolumeCharRow(tag){
+		var str=(new RegExp("^.*_")).replace(tag,"");
+		if(data.environment.charvolume[str]===void){
+			data.environment.charvolume[str]=ConfigCharVolumeDefault;
+		}
+		return data.environment.charvolume[str];
+	}
+	function setVolumeCharRow(tag,volume){
+		var str=(new RegExp("^.*_")).replace(tag,"");
+		return data.environment.charvolume[str]=volume;
+	}
+
+	//--------------------------------------------------------------
+	//	Save Counter
+	//--------------------------------------------------------------
+	function setNewSaveCounter(value){data.savecounter.new=value;}
+	function getNewSaveCounter(){return data.savecounter.new;}
+
+	function setAutoSaveCounter(value){data.savecounter.auto=value;}
+	function getAutoSaveCounter(){return data.savecounter.auto;}
+
+	function setQuickSaveCounter(value){data.savecounter.quick=value;}
+	function getQuickSaveCounter(){return data.savecounter.quick;}
+
+	//--------------------------------------------------------------
+	//	グローバルフラグ
+	//--------------------------------------------------------------
+	function clearGlobal(){
+		data.flags.global.clear();
+	}
+
+	function setGlobal(index,flag){
+		data.flags.global[index]=flag;
+	}
+
+	function getGlobal(index){
+		var result=data.flags.global[index];
+		return result===void?0:result;
+	}
+
+	//--------------------------------------------------------------
+	//	選択肢フラグ
+	//		flags.select[スクリプト名][index]
+	//--------------------------------------------------------------
+	function clearSelect(){
+		(Dictionary.clear incontextof data.flags.select)();
+	}
+
+	function setSelect(filename,index,flag){
+		if(data.flags.select[filename]===void){
+			//	arrayが未定義なら作成する
+			data.flags.select[filename]=new Array();
+		}
+		data.flags.select[filename][index]=flag;
+	}
+
+	function getSelect(filename,index){
+		if(data.flags.select[filename]===void){
+			return 0;
+		}
+		var result=data.flags.select[filename][index];
+		return result===void?0:result;
+	}
+
+	//--------------------------------------------------------------
+	//	タイトルメニューフラグ
+	//--------------------------------------------------------------
+	function clearTitle(){
+		data.flags.title.clear();
+	}
+
+	function setTitle(index,flag=true){
+		if(flag)data.flags.title[index\64]|=1<<(index%64);
+		else	data.flags.title[index\64]&=~(1<<(index%64));
+	}
+
+	function getTitle(index){
+		var result=data.flags.title[index\64];
+		return result===void?0:(result>>(index%64))&1;
+	}
+
+	function isTitle(){
+		return data.flags.title.count>0;
+	}
+
+	//--------------------------------------------------------------
+	//	アルバムフラグ
+	//--------------------------------------------------------------
+	function clearAlbum(){
+		data.flags.album.clear();
+	}
+
+	function setAlbum(index,flag=true){
+		if(index>=0){
+			if(flag)data.flags.album[index\64]|=1<<(index%64);
+			else	data.flags.album[index\64]&=~(1<<(index%64));
+		}
+	}
+
+	function getAlbum(index){
+		if(index>=0){
+			var result=data.flags.album[index\64];
+			return result===void?0:(result>>(index%64))&1;
+		}else{
+			return -1;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	BGMフラグ
+	//--------------------------------------------------------------
+	function clearBgm(){
+		data.flags.bgm.clear();
+	}
+
+	function setBgm(index,flag=true){
+		if(flag)data.flags.bgm[index\64]|=1<<(index%64);
+		else	data.flags.bgm[index\64]&=~(1<<(index%64));
+	}
+
+	function getBgm(index){
+		if(index>=0){
+			var result=data.flags.bgm[index\64];
+			return result===void?0:(result>>(index%64))&1;
+		}else{
+			return -1;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	回想フラグ
+	//--------------------------------------------------------------
+	function clearScene(){
+		data.flags.scene.clear();
+	}
+
+	function setScene(index,flag=true){
+		if(flag)data.flags.scene[index\64]|=1<<(index%64);
+		else	data.flags.scene[index\64]&=~(1<<(index%64));
+	}
+
+	function getScene(index){
+		var result=data.flags.scene[index\64];
+		return result===void?0:(result>>(index%64))&1;
+	}
+
+	//--------------------------------------------------------------
+	//	既読フラグ
+	//		スクリプトファイルごとに既読フラグを持つ
+	//		flags.kidoku[スクリプト名][Array]
+	//--------------------------------------------------------------
+	function clearKidoku(){
+		(Dictionary.clear incontextof data.flags.kidoku)();
+	}
+
+	function setKidoku(filename,index,flag=true){
+		if(data.flags.kidoku[filename]===void){
+			//	arrayが未定義なら作成する
+			data.flags.kidoku[filename]=new Array();
+		}
+		if(flag)data.flags.kidoku[filename][index\64]|=1<<(index%64);
+		else	data.flags.kidoku[filename][index\64]&=~(1<<(index%64));
+	}
+
+	function getKidoku(filename,index){
+		if(data.flags.kidoku[filename]===void){
+			return 0;
+		}
+		var result=data.flags.kidoku[filename][index\64];
+		return result===void?0:(result>>(index%64))&1;
+	}
+
+	//--------------------------------------------------------------
+	//	セーブ、ロード
+	//--------------------------------------------------------------
+	function save(){
+		if(tScript.script.scene){
+			return;
+		}
+
+		data.screen.left=tWindow.left;
+		data.screen.top=tWindow.top;
+		(Dictionary.saveStruct incontextof data)(System.dataPath+GlobalSaveData,isDebug()?'':'z');
+	}
+
+	function load(){
+		try{
+			data=Scripts.evalStorage(System.dataPath+GlobalSaveData);
+		}catch{
+		}
+	}
+}
+
+//==============================================================
+//	Local Data
+//==============================================================
+class TLocalData{
+
+	var data;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TLocalData(){
+		data=new Dictionary();
+		data.reserv=new Array();
+		data.image=new Dictionary();
+		data.layers=new Dictionary();
+		data.camera=new Dictionary();
+		data.script=new Dictionary();
+		data.flags=new Dictionary();
+		data.flags.local=new Array();
+
+		initializeReserv();
+		initializeImage();
+		initializeLayers();
+		initializeScript();
+		initializeFlags();
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		delete data;
+	}
+
+	//--------------------------------------------------------------
+	//	初期化
+	//--------------------------------------------------------------
+	function initializeReserv(){
+		data.reserv.clear();
+	}
+
+	function initializeImage(){
+		(Dictionary.clear incontextof data.image)();
+	}
+
+	function initializeLayers(){
+		(Dictionary.clear incontextof data.layers)();
+	}
+
+	function initializeScript(){
+		(Dictionary.clear incontextof data.script)();
+		data.script.name="";
+		data.script.counter=0;
+		data.script.stack=new Array();
+		data.script.savetitle="";
+		data.script.messageString="";
+		data.script.messageString0="";
+		data.script.messageString1="";
+		data.script.messageVisible=false;
+		data.script.messageWait=false;
+		data.script.messageMode=0;
+		data.script.messageWindowB=void;
+		data.script.messageWindowL=void;
+		data.script.messageWindowC=void;
+		data.script.messageWindowR=void;
+		data.script.systemBase=new Array();
+		data.script.bgm=new Array();
+		data.script.bgvoice;	//★バックグラウンドボイス
+		data.script.voiceName=void;
+		data.script.autosave=false;
+		data.script.logDisabled=false;
+		data.script.logFunc=true;	//★ログ
+		data.script.filter="default";	//★filter
+		data.script.map=void;
+		data.script.selectCursor=new Array();
+		data.script.shake=new Dictionary();
+		data.script.shake.interval=100;
+		data.script.shake.screen=false;
+		data.script.shake.message=false;
+		data.script.shake.virtical=false;
+		data.script.shake.horizontal=false;
+		data.script.shake.cg=new Array();
+		data.script.dictionary=new Dictionary();
+		data.script.gameSystem=new Dictionary();
+		data.script.button=new Array();
+		data.script.effect=new Dictionary();
+		data.script.wipeCancelDisabled=false;
+		data.script.moveCancelDisabled=false;
+		data.script.waitCancelDisabled=false;
+
+		//★face関連
+		data.script.face=new Dictionary();
+		data.script.face.flag=false;	//faceモードがONかどうか？（falseがOFF）
+		data.script.face.image="";	//表示中のface画像（非表示中は常に""になるように）
+		data.script.face.x=tSettings.face.x;	//faceの表示位置（x座標）
+		data.script.face.y=tSettings.face.y;	//faceの表示位置（y座標）
+
+	}
+
+	function initializeFlags(){
+		data.flags.local.clear();
+	}
+
+	//--------------------------------------------------------------
+	//	イメージ
+	//--------------------------------------------------------------
+	function setImageDefault(id,center,order){
+		if(data.image[id]!==void){
+			delete data.image[id];
+		}
+		data.image[id]=new Dictionary();
+		data.image[id].centerDefault=center;
+		data.image[id].orderDefault=order;
+	}
+
+	function clearImage(id){
+		data.image[id].filename=void;
+		data.image[id].x=0;
+		data.image[id].y=0;
+		data.image[id].size=1;
+		data.image[id].center=data.image[id].centerDefault;
+		data.image[id].color=0;
+		data.image[id].alpha=255;
+		data.image[id].order=data.image[id].orderDefault;
+		data.image[id].anime=void;
+		data.image[id].visible=false;
+	}
+
+	function setImageFilename(id,filename){data.image[id].filename=filename;}
+	function setImageX(id,x){data.image[id].x=x;}
+	function setImageY(id,y){data.image[id].y=y;}
+	function setImageSize(id,size){data.image[id].size=size;}
+	function setImageCenter(id,center){data.image[id].center=center;}
+	function setImageColor(id,color){data.image[id].color=color;}
+	function setImageAlpha(id,alpha){data.image[id].alpha=alpha;}
+	function setImageOrder(id,order){data.image[id].order=order;}
+	function setImageAnime(id,anime){data.image[id].anime=anime;}
+	function setImageVisible(id,visible){data.image[id].visible=visible;}
+
+	function getImageFilename(id){return data.image[id].filename;}
+	function getImageX(id){return data.image[id].x;}
+	function getImageY(id){return data.image[id].y;}
+	function getImageSize(id){return data.image[id].size;}
+	function getImageCenter(id){return data.image[id].center;}
+	function getImageColor(id){return data.image[id].color;}
+	function getImageAlpha(id){return data.image[id].alpha;}
+	function getImageOrder(id){return data.image[id].order;}
+	function getImageAnime(id){return data.image[id].anime;}
+	function getImageVisible(id){return data.image[id].visible;}
+
+	//--------------------------------------------------------------
+	//	スクリプトデータ
+	//--------------------------------------------------------------
+	function setScriptName(name){data.script.name=name;}
+	function getScriptName(){return data.script.name;}
+
+	function setScriptCounter(counter){data.script.counter=counter;}
+	function getScriptCounter(){return data.script.counter;}
+
+	function setScriptSaveTitle(str){data.script.savetitle=str;}
+	function getScriptSaveTitle(){return data.script.savetitle;}
+
+	function setScriptMessage(str){data.script.messageString=str;}
+	function getScriptMessage(){return data.script.messageString;}
+
+	function setScriptMessage0(str){data.script.messageString0=str;}
+	function getScriptMessage0(){return data.script.messageString0;}
+	function setScriptMessage1(str){data.script.messageString1=str;}
+	function getScriptMessage1(){return data.script.messageString1;}
+
+	function setScriptMessageVisible(visible){data.script.messageVisible=visible;}
+	function getScriptMessageVisible(){return data.script.messageVisible;}
+
+	function setScriptMessageWait(flag){data.script.messageWait=flag;}
+	function getScriptMessageWait(){return data.script.messageWait;}
+
+	function setScriptMessageMode(mode){data.script.messageMode=mode;}
+	function getScriptMessageMode(){return data.script.messageMode;}
+
+	function setMessageWindowFile(base,left,center,right){
+		data.script.messageWindowB=base;
+		data.script.messageWindowL=left;
+		data.script.messageWindowC=center;
+		data.script.messageWindowR=right;
+	}
+	function getMessageWindowFileB(){return data.script.messageWindowB;}
+	function getMessageWindowFileL(){return data.script.messageWindowL;}
+	function getMessageWindowFileC(){return data.script.messageWindowC;}
+	function getMessageWindowFileR(){return data.script.messageWindowR;}
+
+	function clearSystemBase(){
+		data.script.systemBase=new Array();
+	}
+	function setSystemBase(index,filename){
+		data.script.systemBase[index]=filename;
+	}
+	function getSystemBase(index){
+		return data.script.systemBase[index];
+	}
+
+	function makeScriptBgmDefault(track){
+		if(data.script.bgm[track]===void){
+			data.script.bgm[track]=new Dictionary();
+			data.script.bgm[track].name=void;
+			data.script.bgm[track].count=0;
+			data.script.bgm[track].volume=100;
+			data.script.bgm[track].pause=false;
+		}
+	}
+
+	function clearScriptBgm(track){
+		if(track=="all"){
+			data.script.bgm=new Array();
+		}else{
+			data.script.bgm[track]=void;
+		}
+	}
+
+	function setScriptBgmName(track,str){makeScriptBgmDefault(track);data.script.bgm[track].name=str;}
+	function getScriptBgmName(track){makeScriptBgmDefault(track);return data.script.bgm[track];}
+
+	function setScriptBgmCount(track,value){makeScriptBgmDefault(track);data.script.bgm[track].count=value;}
+	function getScriptBgmCount(track){makeScriptBgmDefault(track);return data.script.bgm[track].count;}
+
+	function setScriptBgmVolume(track,value){
+		if(track=="all"){
+			for(var i=0;i<data.script.bgm.count;i++){
+				setScriptBgmVolume(i,value);
+			}
+		}else{
+			makeScriptBgmDefault(track);
+			data.script.bgm[track].volume=value;
+		}
+	}
+	function getScriptBgmVolume(track){makeScriptBgmDefault(track);return data.script.bgm[track].volume;}
+
+	function setScriptBgmPause(track,flag){
+		if(track=="all"){
+			for(var i=0;i<data.script.bgm.count;i++){
+				setScriptBgmPause(i,flag);
+			}
+		}else{
+			makeScriptBgmDefault(track);
+			data.script.bgm[track].pause=flag;
+		}
+	}
+	function getScriptBgmPause(track){makeScriptBgmDefault(track);return data.script.bgm[track].pause;}
+
+	function restoreScriptBgm(){
+		for(var i=0;i<data.script.bgm.count;i++){
+			if(data.script.bgm[i]!==void&&data.script.bgm[i].name!==void){
+				if(data.script.bgm[i].pause==false){
+					tSound.play(TrackBGM.sprintf(i),data.script.bgm[i].name,data.script.bgm[i].volume,data.script.bgm[i].count,0,0);
+				}else{
+					tSound.track['bgm'+i].paused=false;	//BGMトラックは一桁に収まるはず？
+				}
+			}
+		}
+	}
+
+	//★バックグラウンドボイス
+	function makeScriptBgvDefault(){
+		if(data.script.bgvoice===void){
+			data.script.bgvoice=new Dictionary();
+			data.script.bgvoice.name=void;
+			data.script.bgvoice.count=0;
+			data.script.bgvoice.volume=100;
+			data.script.bgvoice.pause=false;
+		}
+	}
+
+	function clearScriptBgv(){data.script.bgvoice=void;}
+
+	function setScriptBgvName(str){makeScriptBgvDefault();data.script.bgvoice.name=str;}
+	function getScriptBgvName(){makeScriptBgvDefault();return data.script.voice.name;}
+
+	function setScriptBgvCount(value){makeScriptBgvDefault(track);data.script.bgvoice.count=value;}
+	function getScriptBgvCount(){makeScriptBgvDefault(track);return data.script.bgvoice.count;}
+
+	function setScriptBgvVolume(value){makeScriptBgvDefault();data.script.bgvoice.volume=value;}
+	function getScriptBgvVolume(){makeScriptBgvDefault();return data.script.bgvoice.volume;}
+
+	function setScriptBgvPause(flag){makeScriptBgvDefault();data.script.bgvoice.pause=flag;}
+	function getScriptBgvPause(){makeScriptBgvDefault();return data.script.bgvoice.pause;}
+
+	function restoreScriptBgv(){
+		if(data.script.bgvoice!==void&&data.script.bgvoice.name!==void){
+			if(data.script.bgvoice.pause==false){
+				tSound.play("bgvoice",data.script.bgvoice.name,data.script.bgvoice.volume,data.script.bgvoice.count,0,0);
+			}else{
+				tSound.play("bgvoice",data.script.bgvoice.name,data.script.bgvoice.volume,data.script.bgvoice.count,0,0);
+				tSound.pauseBgVoice();
+			}
+		}
+	}
+	//▲バックグラウンドボイス
+
+	function setScriptVoiceName(str){data.script.voiceName=str;}
+	function getScriptVoiceName(){return data.script.voiceName;}
+
+	function setScriptAutosave(flag){data.script.autosave=flag;}
+	function getScriptAutosave(){return data.script.autosave;}
+
+	function setScriptLogDisabled(flag){data.script.logDisabled=flag;}
+	function getScriptLogDisabled(){return data.script.logDisabled;}
+
+	//★ログ
+	function setScriptLogFunc(flag){data.script.logFunc=flag;}
+	function getScriptLogFunc(){return data.script.logFunc;}
+
+	//★fillter
+	function setScriptFilter(flag){data.script.filter=flag;}
+	function getScriptFilter(){return data.script.filter;}
+
+	function setScriptSelectCursor(id,param){data.script.selectCursor[id]=param;}
+	function getScriptSelectCursor(id){return data.script.selectCursor[id];}
+
+	function setScriptShakeInterval(time){data.script.shake.interval=time;}
+	function getScriptShakeInterval(){return data.script.shake.interval;}
+	function setScriptShakeScreen(flag){data.script.shake.screen=flag;}
+	function getScriptShakeScreen(){return data.script.shake.screen;}
+	function setScriptShakeMessage(flag){data.script.shake.message=flag;}
+	function getScriptShakeMessage(){return data.script.shake.message;}
+	function setScriptShakeCG(layer,flag){
+		if(layer==="all") {
+			data.script.shake.cg.clear();
+		} else {
+			var num=int layer.substring(2);
+			data.script.shake.cg[num]=flag;
+		}
+	}
+	function getScriptShakeCG(){return data.script.shake.cg;}	//配列を返します
+//	function setScriptShakeVirtical(flag){data.script.shake.virtical=flag;}
+	function setScriptShakeVirtical(y){data.script.shake.virtical=y;}
+	function getScriptShakeVirtical(){return data.script.shake.virtical;}
+//	function setScriptShakeHorizontal(flag){data.script.shake.horizontal=flag;}
+	function setScriptShakeHorizontal(x){data.script.shake.horizontal=x;}
+	function getScriptShakeHorizontal(){return data.script.shake.horizontal;}
+
+	function setScriptDictionary(key,object){data.script.dictionary[key]=object;}
+	function getScriptDictionary(key){return data.script.dictionary[key];}
+
+	function setScriptGameSystemVisible(flag){data.script.gameSystem.visible=flag;}
+	function getScriptGameSystemVisible(){return data.script.gameSystem.visible;}
+	function setScriptGameSystemHide(flag){data.script.gameSystem.hide=flag;}
+	function getScriptGameSystemHide(){return data.script.gameSystem.hide;}
+
+	function clearScriptEffect(){data.script.effect=new Dictionary();}
+	function setScriptEffectFilename(param){data.script.effect.filename=param;}
+	function setScriptEffectMax(param){data.script.effect.max=param;}
+	function setScriptEffectPop(param){data.script.effect.pop=param;}
+	function setScriptEffectInterval(param){data.script.effect.interval=param;}
+	function setScriptEffectPatternCount(param){data.script.effect.patterncount=param;}
+	function setScriptEffectPatternInterval(param){data.script.effect.patterninterval=param;}
+	function setScriptEffectMoveType(param){data.script.effect.movetype=param;}
+	function setScriptEffectStartFlag(param){data.script.effect.startflag=param;}
+	function setScriptEffectVisible(param){data.script.effect.visible=param;}
+	function getScriptEffectFilename(){return data.script.effect.filename;}
+	function getScriptEffectMax(){return data.script.effect.max;}
+	function getScriptEffectPop(){return data.script.effect.pop;}
+	function getScriptEffectInterval(){return data.script.effect.interval;}
+	function getScriptEffectPatternCount(){return data.script.effect.patterncount;}
+	function getScriptEffectPatternInterval(){return data.script.effect.patterninterval;}
+	function getScriptEffectMoveType(){return data.script.effect.movetype;}
+	function getScriptEffectStartFlag(){return data.script.effect.startflag;}
+	function getScriptEffectVisible(){return data.script.effect.visible;}
+
+	function setScriptWipeCancelDisabled(flag){
+		data.script.wipeCancelDisabled=flag;
+	}
+	function getScriptWipeCancelDisabled(){
+		return data.script.wipeCancelDisabled;
+	}
+
+	function setScriptMoveCancelDisabled(flag){
+		data.script.moveCancelDisabled=flag;
+	}
+	function getScriptMoveCancelDisabled(){
+		return data.script.moveCancelDisabled;
+	}
+
+	function setScriptWaitCancelDisabled(flag){
+		data.script.waitCancelDisabled=flag;
+	}
+	function getScriptWaitCancelDisabled(){
+		return data.script.waitCancelDisabled;
+	}
+
+	function setScriptAutosaveDisabled(flag){
+		data.script.autosaveDisabled=flag;
+	}
+
+	function getScriptAutosaveDisabled(){
+		return data.script.autosaveDisabled;
+	}
+
+	//★faceのフラグ
+	function setScriptFaceFlag(flag){
+		data.script.face.flag=flag;
+	}
+	function getScriptFaceFlag(){
+		return data.script.face.flag;
+	}
+	//★faceのフラグ
+	function setScriptFace(image,x=tSettings.face.x,y=tSettings.face.y){
+		data.script.face.image=image;
+		data.script.face.x=x;
+		data.script.face.y=y;
+	}
+	function getScriptFaceImage(){return data.script.face.image;}
+	function getScriptFaceX(){return data.script.face.x;}
+	function getScriptFaceY(){return data.script.face.y;}
+
+
+	//--------------------------------------------------------------
+	//	スタック
+	//--------------------------------------------------------------
+	function pushStack(param){
+		data.script.stack.push(param);
+	}
+
+	function popStack(){
+		return data.script.stack.pop();
+	}
+
+	function clearStack(){
+		return data.script.stack.clear();
+	}
+
+	//--------------------------------------------------------------
+	//	ローカルフラグ
+	//--------------------------------------------------------------
+	function setLocal(index,flag){
+		data.flags.local[index]=flag;
+	}
+
+	function getLocal(index){
+		var result=data.flags.local[index];
+		return result===void?0:result;
+	}
+
+	//--------------------------------------------------------------
+	//	セーブ、ロード
+	//--------------------------------------------------------------
+	function save(index){
+		if(tScript.script.scene){
+			return;
+		}
+
+		var date=new Date();
+		data.date="%04d/%02d/%02d %02d:%02d:%02d".sprintf(date.getYear(),(date.getMonth()+1),date.getDate(),date.getHours(),date.getMinutes(),date.getSeconds());
+		var i=LocalSaveData.indexOf(".");
+		var filename=LocalSaveData.substring(0,i)+index+LocalSaveData.substring(i);
+		var tempMessageWait=getScriptMessageWait();
+//		if(tMessage.isBusy()){
+//			setScriptMessageWait(true);
+//		}
+		(Dictionary.saveStruct incontextof data)(System.dataPath+filename,isDebug()?'':'z');
+//		setScriptMessageWait(tempMessageWait);
+
+		var layer=new Layer(tWindow,tWindow.primaryLayer);
+		layer.type=ltAlpha;
+		layer.setSize(tWindow.layer.width,tWindow.layer.height);
+		var layerTemp=new Layer(tWindow,tWindow.primaryLayer);
+		layerTemp.type=ltAlpha;
+		layerTemp.setSize(tCanvas.layerFront.width,tCanvas.layerFront.height);
+		layerTemp.copyRect(0,0,tCanvas.layerFront,0,0,tCanvas.layerFront.width,tCanvas.layerFront.height);
+
+//		if(tCanvas.layers['bg']!==void){
+//			tCanvas.layers['bg'].setVisible2(true);
+//			layer.piledCopy(0,0,tWindow.layer,0,0,tWindow.layer.width,tWindow.layer.height);
+//			tCanvas.layers['bg'].setVisible2(false);
+//		}
+		//	サムネイル用データ作成
+		tCanvasBeta.thumbnail=true;
+		tCanvasBeta.render(tCanvas.layerFront,true,true);
+		layer.piledCopy(0,0,tWindow.layer,0,0,tWindow.layer.width,tWindow.layer.height);
+		tCanvasBeta.thumbnail=false;
+
+		layer.stretchCopy(0,0,tSaveLoad.thumbnailWidth,tSaveLoad.thumbnailHeight,layer,0,0,layer.width,layer.height,stLinear);
+		layer.setImageSize(tSaveLoad.thumbnailWidth,tSaveLoad.thumbnailHeight);
+		layer.saveLayerImage(System.dataPath+ThumbnailSaveData+index+ThumbnailSaveDataExt,"bmp24");
+
+		//	サムネイル用データを戻す
+		tCanvas.layerFront.copyRect(0,0,layerTemp,0,0,tCanvas.layerFront.width,tCanvas.layerFront.height);
+		tCanvasBeta.render(layer,true,true);
+		//★最後にセーブした（最新の）データがあるページを記憶させる
+		if(index<tSettings.quickSaveOffset||index>tSettings.quickSaveOffset+tSettings.quickSaveCount-1){
+			if(index<tSettings.autoSaveOffset||index>tSettings.autoSaveOffset+tSettings.autoSaveCount-1){
+				tGlobalData.data.environment.saveloadpage=index\(tSaveLoad.layout.px*tSaveLoad.layout.py);
+			}
+		}
+		//★
+	}
+
+	function quickSave(){
+		if(tScript.script.scene){
+			return;
+		}
+
+		if(tSettings.quickSaveOffset!==void&&tSettings.quickSaveCount!==void){
+			var count=0;
+			if(tSettings.quickSaveCount!=1){
+				count=tGlobalData.getQuickSaveCounter();
+				save(tSettings.quickSaveOffset+count);
+				if(++count>=tSettings.quickSaveCount){
+					count=0;
+				}
+			}else{
+				save(tSettings.quickSaveOffset);
+			}
+			tGlobalData.setQuickSaveCounter(count);
+			tGlobalData.save();
+		}
+	}
+
+	function autoSave(){
+		if(tScript.script.scene||getScriptAutosaveDisabled()){
+			return;
+		}
+
+		if(tSettings.autoSaveOffset!==void&&tSettings.autoSaveCount!==void){
+			var count=tGlobalData.getAutoSaveCounter();
+			save(tSettings.autoSaveOffset+count);
+			if(++count>=tSettings.autoSaveCount){
+				count=0;
+			}
+			tGlobalData.setAutoSaveCounter(count);
+			tGlobalData.save();
+		}
+	}
+
+	function load(index){
+		data=loadData(index);
+	}
+
+	function loadData(index){
+		var i=LocalSaveData.indexOf(".");
+		var filename=LocalSaveData.substring(0,i)+index+LocalSaveData.substring(i);
+		if(Storages.isExistentStorage(System.dataPath+filename)){
+			return Scripts.evalStorage(System.dataPath+filename);
+		}
+		return void;
+	}
+
+	//★クイックロード拡張
+	function quickLoad(){
+		if(tScript.script.scene){
+			return;
+		}
+
+		var loadNum=tGlobalData.getQuickSaveCounter()-1;
+		if(loadNum<0) loadNum=tSettings.quickSaveCount-1;
+		loadNum+=tSettings.quickSaveOffset;
+
+		var i=LocalSaveData.indexOf(".");
+		var filename=LocalSaveData.substring(0,i)+loadNum+LocalSaveData.substring(i);
+		if(!Storages.isExistentStorage(System.dataPath+filename)) return;
+
+		tMain.timer.enabled=false;
+
+		if(askYesNo("クイックロードしますか？")){
+			tMain.timer.enabled=true;
+			tCanvas.initialize();
+			tMap.initialize();	//マップ画面からマップ画面をロードした際の不具合対応
+			data=loadData(loadNum);
+			tScript.restartScript();
+		}
+		tMain.timer.enabled=true;
+	}
+}
+

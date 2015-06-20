@@ -1,0 +1,453 @@
+//==============================================================
+//	TExScene
+//==============================================================
+class TExScene{
+
+	var PNone=0,PStart=1,PTick=2,PReturn=3,PTickExCG=6,PTickExScene=7,PTickExBGM=8;
+
+	var owner;
+	var phase;
+	var layer;
+	var timer;
+	var items;
+	var itemList;
+	var image;
+	var layout;
+	var indexTab,indexPage,indexColumn;
+	var result;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TExScene(owner){
+		this.owner=owner;
+		phase=PNone;
+
+		layout=new Dictionary();
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		if(layer!==void){
+			delete layer;
+		}
+		if(items!==void){
+			delete items;
+		}
+		if(itemList!==void){
+			delete itemList;
+		}
+//		delete pagecaption;
+		delete layout;
+	}
+
+	//--------------------------------------------------------------
+	//	メモリ解放
+	//--------------------------------------------------------------
+	function releaseLayer(){
+		if(layer!==void){
+			owner.remove(layer);
+			invalidate layer;
+			layer=void;
+		}
+	}
+	function releaseItems(){
+		if(items!==void){
+			var temp=[];
+			temp.assign(items);
+			for(var i=0;i<temp.count;i+=2){
+				invalidate temp[i+1];
+			}
+			invalidate items;
+			items=void;
+		}
+	}
+	function releaseItemList(){
+		if(itemList!==void){
+			invalidate itemList;
+			itemList=void;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	表示
+	//--------------------------------------------------------------
+	function start(restart=false){
+
+		releaseLayer();
+		layer=new TExSceneLayer(owner,owner.primaryLayer,this);
+		owner.add(layer);
+		layer.setPos(0,0,tSettings.canvasWidth,tSettings.canvasHeight);
+		layer.type=ltAlpha;
+		layer.opacity=0;
+		layer.hitThreshold=0;
+		layer.visible=true;
+
+		if(!restart){
+			indexTab=0;
+			indexPage=0;
+		}
+
+		makeButton();
+
+		//	フェード用タイマ
+		timer=System.getTickCount();
+		phase=PStart;
+	}
+
+	//--------------------------------------------------------------
+	//	ボタン登録
+	//--------------------------------------------------------------
+	function makeButton(){
+
+		releaseItems();
+		releaseItemList();
+		items=new Dictionary();
+		itemList=new Array();
+		var itemListCount=0;
+
+		var itemTag=0;
+		var lines=new Array();
+		lines.load(FileExSceneSetting);
+		for(var i=0;i<lines.count;i++){
+			var key,object,idx;
+			if((idx=lines[i].indexOf(":"))>0){
+				key=lines[i].substring(0,idx).trim();
+				object=lines[i].substring(idx+1).trim();
+			}
+			if(key!==void&&object!=""){
+				var param=object.split(' \t',,true);
+				if("image"==key){
+					var image=param[0];
+					var temp=new TxLayer(owner,layer);
+					temp.loadImages(image);
+					temp.setSizeToImageSize();
+					temp.setPos(0,0);
+					temp.visible=true;
+					this.image=temp;
+				}else if("button"==key){
+					var tag=param[0];
+					var image=param[1];
+					var x=+param[2],y=param[3];
+					var overSE=param[4];
+					var downSE=param[5];
+					var cursor=param[6];
+					var tag2=param[7];
+					var temp=new TButton(owner,layer,event,tag);
+					temp.setImage(x,y,image);
+					temp.setCursor(cursor);
+					temp.setVisible(true);
+					temp.setWipeDisabled(tCanvas.isWipe2);
+					temp.buttonStatus.tag2=tag2;
+					if(overSE=="off"){temp.buttonStatus.overSE=void;}else if(overSE!="void"){temp.buttonStatus.overSE=overSE;}
+					if(downSE=="off"){temp.buttonStatus.downSE=void;}else if(downSE!="void"){temp.buttonStatus.downSE=downSE;}
+					if(tag=="tab"||tag=="page"){
+						items[tag+":"+tag2]=temp;
+						if(tag2!="back"&&tag2!="next"){
+							temp.setToggle(true);
+						}
+					}else{
+						items[tag]=temp;
+					}
+				}else if("item"==key){
+					var tab=param[0];
+					var image=param[1];
+					var label=param[2];
+					if(itemList[tab]===void){
+						itemList[tab]=new Array();
+					}
+					itemList[tab].add(%['index'=>itemListCount,'image'=>image,'label'=>label,'tag'=>itemTag++]);
+				}else if("layout"==key){
+					if("page"==param[0]){
+						layout.page=new Dictionary();
+						layout.page.x=+param[1];
+						layout.page.y=+param[2];
+						layout.page.ix=+param[3];
+						layout.page.iy=+param[4];
+						layout.page.px=+param[5];
+						layout.page.py=+param[6];
+						layout.page.overSE=param[7];
+						layout.page.downSE=param[8];
+						layout.page.cursor=param[9];
+					}else if("all"==param[0]){
+						if("caption"==param[1]){
+							layout.caption=new Dictionary();
+							layout.caption.file=param[2];
+							layout.caption.x=param[3];
+							layout.caption.y=param[4];
+							layout.caption.layer=new TxLayer(owner,layer);
+							layout.caption.layer.setPos(layout.caption.x,layout.caption.y);
+							layout.caption.layer.visible=true;
+						}
+					}
+				}
+			}
+		}
+
+		//	ページ表示
+		showPage();
+	}
+
+	function showPage(){
+
+		//	タブ、ページボタン設定
+		var columnCount=getColumnCount(indexTab);								//	タブが持っている項目数
+		var numberInPaige=layout.page.x*layout.page.y;							//	1ページに表示できる項目数
+		var pageCount=(columnCount+numberInPaige-1)\numberInPaige;				//	総ページ数
+		layout.page.pageCount=pageCount;
+		var temp=[];
+		temp.assign(items);
+		for(var i=0;i<temp.count;i+=2){
+			var idx=temp[i].indexOf(':');
+			if(idx>0){
+				var key=temp[i].substring(0,idx);
+				var value=temp[i].substring(idx+1);
+				if(key=="tab"){
+					var btn=temp[i+1];
+					btn.setToggleDown(indexTab==value);
+					btn.setEnabled(indexTab!=value);
+					btn.renew();
+				}else if(key=="page"){
+					var btn=temp[i+1];
+					if(+btn.buttonStatus.tag2<pageCount){
+						btn.setToggleDown(indexPage==value);
+						btn.setEnabled(indexPage!=value);
+						btn.setVisible(true);
+					}else{
+						btn.setVisible(false);
+					}
+					btn.renew();
+				}
+			}
+		}
+
+		//ページキャプション
+		if(layout.caption!==void){
+			layout.caption.layer.loadImages("%s%d".sprintf(layout.caption.file,indexPage+1));
+			layout.caption.layer.setSizeToImageSize();
+		}
+
+		//	アイテム表示
+		if(items.items!==void){
+			for(var i=0;i<items.items.count;i++){
+				invalidate items.items[i];
+			}
+			delete items.items;
+		}
+		items.items=new Array();
+		var x=0,y=0;
+		for(var i=0;i<numberInPaige;i++){
+			var column=indexPage*numberInPaige+i;
+			if(itemList[indexTab][column]!==void){
+				var left=layout.page.ix+layout.page.px*x;
+				var top=layout.page.iy+layout.page.py*y;
+
+				var tempbtn=new TButton(owner,layer,event,"items");
+				tempbtn.setImage(left,top,itemList[indexTab][column].image);
+				tempbtn.setCursor(layout.page.cursor);
+				tempbtn.setEnabled(tGlobalData.getScene(itemList[indexTab][column].tag));
+				tempbtn.setVisible(true);
+				tempbtn.setWipeDisabled(tCanvas.isWipe2);
+				tempbtn.buttonStatus.tag2=itemList[indexTab][column].label;
+				if(layout.page.overSE=="off"){tempbtn.buttonStatus.overSE=void;}else if(layout.page.overSE!="void"){tempbtn.buttonStatus.overSE=layout.page.overSE;}
+				if(layout.page.downSE=="off"){tempbtn.buttonStatus.downSE=void;}else if(layout.page.downSE!="void"){tempbtn.buttonStatus.downSE=layout.page.downSE;}
+
+				items.items.add(tempbtn);
+
+				if(++x>=layout.page.x){
+					x=0;
+					++y;
+				}
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	イベント処理
+	//--------------------------------------------------------------
+	function event(param){
+
+		if(param.tag=="tab"){
+			//	タブ切り替え
+			indexTab=param.tag2;
+			indexPage=0;
+			showPage();
+		}else if(param.tag=="page"){
+			//	ページ切り替え
+			var old=indexPage;
+			if(param.tag2=="next"){
+				if(++indexPage>=layout.page.pageCount){
+					indexPage=layout.page.pageCount-1;
+				}
+			}else if(param.tag2=="back"){
+				if(--indexPage<0){
+					indexPage=0;
+				}
+			}else{
+				indexPage=+param.tag2;
+			}
+			if(old!=indexPage){
+				showPage();
+			}
+		}else if(param.tag=="items"){
+			result=param.tag2;
+			tTitle.layer.opacity=0;
+			phase=PReturn;
+		}else if(param.tag=="return"){
+			tTitle.layer.opacity=255;
+			close();
+		}else if(param.tag=="cg"){
+			tExCG.start();
+			phase=PTickExCG;
+		}else if(param.tag=="bgm"){
+			tExBGM.start();
+			phase=PTickExBGM;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	Close
+	//--------------------------------------------------------------
+	function close(){
+		result=void;
+		phase=PReturn;
+	}
+
+	//--------------------------------------------------------------
+	//	Tick
+	//--------------------------------------------------------------
+	function tick(){
+		switch(phase){
+			case PNone:
+				return false;
+			case PStart:
+				if(timer+10<=System.getTickCount()){
+					timer=System.getTickCount();
+					if(tGlobalData.data.environment.effectoff||(layer.opacity+=tSettings.changeSpeed)>=255){
+						layer.opacity=255;
+						phase=PTick;
+						//CGモードが存在する場合
+						if(tExCG.layer!=void && tExCG.layer isvalid){
+							tExCG.releaseLayer();
+							tExCG.releaseItems();
+							tTitle.phase=PTickExScene;
+						}
+						//BGMモードが存在する場合
+						else if(tExBGM.layer!=void && tExBGM.layer isvalid){
+						/*	if(tTitle.bgmFilename[0]!==void && tExBGM.nowPlaying!=''){
+								var rnd = (int)(Math.random() * tTitle.bgmFilename.count);
+								tSound.play(TrackBGM.sprintf(0),tTitle.bgmFilename[rnd],100,0,0,0);
+								tExBGM.nowPlaying=tTitle.bgmFilename[rnd];
+							}
+						*/
+							tExBGM.releaseLayer();
+							tExBGM.releaseItems();
+							tExBGM.releaseItemList();
+							tTitle.phase=PTickExScene;
+						}
+					}
+				}
+				break;
+			case PTick:
+				break;
+			case PReturn:
+				if(timer+10<=System.getTickCount()){
+					timer=System.getTickCount();
+					if(tGlobalData.data.environment.effectoff||(layer.opacity-=tSettings.changeSpeed)<=0){
+						layer.opacity=0;
+						layer.visible=false;
+						if(result!=void && result!=''){
+							//シーン回想に入る（BGMは止めるべき？
+							tSound.stop(TrackBGM.sprintf(0),500);
+						}else{
+							//タイトルに戻る
+							tExBGM.nowPlaying='';
+							tExBGM.exBgmVolume=void;
+							if(tTitle.bgmFilename[0]!==void){
+								var rnd = (int)(Math.random() * tTitle.bgmFilename.count);
+								tSound.play(TrackBGM.sprintf(0),tTitle.bgmFilename[rnd],100,0,0,0);
+								tExBGM.nowPlaying=tTitle.bgmFilename[rnd];
+							}
+						
+						}
+						releaseLayer();
+						releaseItems();
+						releaseItemList();
+						phase=PNone;
+					}
+				}
+				break;
+
+			//cgmode
+			case PTickExCG:
+				if(!tExCG.tick()){
+					phase=PTick;
+				}
+				break;
+
+			//bgmmode
+			case PTickExBGM:
+				if(!tExBGM.tick()){
+					phase=PTick;
+				}
+				break;
+		}
+		return true;
+	}
+
+	function isBusy(){
+		return phase!=PNone;
+	}
+
+	//--------------------------------------------------------------
+	//	ImageList
+	//--------------------------------------------------------------
+	function getTabCount(){
+		return itemList.count;
+	}
+
+	function getColumnCount(tab){
+		return itemList[tab].count;
+	}
+
+	function getImageCount(tab,column){
+		return itemList[tab][column].images.count;
+	}
+}
+
+//==============================================================
+//	TExSceneLayer
+//==============================================================
+class TExSceneLayer extends Layer{
+
+	var owner;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TExSceneLayer(window,parent,owner){
+		super.Layer(window,parent);
+		this.owner=owner;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		super.finalize(...);
+	}
+
+	//--------------------------------------------------------------
+	//	Event
+	//--------------------------------------------------------------
+	function onMouseDown(x,y,button,shift){
+	}
+	function onMouseUp(x,y,button,shift){
+		if(button==mbRight){
+			tTitle.layer.opacity=255;
+			owner.close();
+		}
+	}
+}

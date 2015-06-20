@@ -1,0 +1,389 @@
+//==============================================================
+//	TTitle
+//==============================================================
+class TTitle{
+
+	var PNone=0,PStart=1,PTick=2,PStartScript=3,PTickLoad=4,PTickConfig=5,PTickExCG=6,PTickExScene=7,PTickExBGM=8,PTickEnd=9;
+	var PageNormal="normal",PageExtra="extra";
+
+	var owner;
+	var phase;
+	var layer;
+	var timer;
+	var items;
+	var images;
+	var page;
+	var scriptFilename;
+	var bgmFilename;
+	var bgmFilename = new Array();	//ランダム
+	var tCallFilename = new Array();	//ランダム
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TTitle(owner){
+		this.owner=owner;
+		phase=PNone;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		if(layer!==void){
+			delete layer;
+		}
+		if(items!==void){
+			delete items;
+		}
+		if(images!==void){
+			delete images;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	メモリ解放
+	//--------------------------------------------------------------
+	function releaseLayer(){
+		if(layer!==void){
+			owner.remove(layer);
+			invalidate layer;
+			layer=void;
+		}
+	}
+	function releaseItems(){
+		if(items!==void){
+			for(var i=0;i<items.count;i++){
+				if(items[i]!==void){
+					invalidate items[i].object;
+				}
+			}
+			invalidate items;
+			items=void;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	タイトル表示、非表示
+	//--------------------------------------------------------------
+	function start2(){
+		tExScene.result='start2';	//段階的に回想中かどうか判定に使う start2()では'start2' start()で''に初期化
+		start(page);
+		tExScene.start(true);
+		phase=PTickExScene;
+	}
+
+	function start(p=PageNormal){
+		layer=new TTitleLayer(owner,owner.primaryLayer,this);
+		owner.add(layer);
+		layer.setPos(0,0,tSettings.canvasWidth,tSettings.canvasHeight);
+		layer.type=ltAlpha;
+		layer.opacity=0;
+		layer.visible=true;
+
+		//	ボタン登録
+		page=p;
+		makeButton();
+
+		//	フェード用タイマ
+		timer=System.getTickCount();
+		phase=PStart;
+
+		//	シナリオ中の右クリックを許可
+		tWindow.enabledRightButton=true;
+
+		//	BGM再生
+//		tSound.stopBGM();
+		tSound.stopSE();
+		tSound.stopVoice();
+		tSound.stopBgVoice();
+		tScript.bgvoiceCollision=0;	//BGVフラグも初期化
+		if(bgmFilename[0]!==void){
+			if(tExBGM.nowPlaying!=''){
+				//シーン回想から戻るとき
+				tSound.play(TrackBGM.sprintf(0),tExBGM.nowPlaying,100,0,0,0);
+				if(tExBGM.exBgmVolume==void) tExBGM.exBgmVolume=tGlobalData.data.environment.bgmVolume*tGlobalData.data.environment.masterVolume\100;
+				tSound.track['bgm0'].volume=tExBGM.exBgmVolume*1000;
+			}else{
+				var rnd = (int)(Math.random() * bgmFilename.count);
+				tSound.play(TrackBGM.sprintf(0),bgmFilename[rnd],100,0,0,0);
+				tExBGM.nowPlaying=bgmFilename[rnd];
+				if(tExBGM.exBgmVolume!=void) tSound.track['bgm0'].volume=tExBGM.exBgmVolume*1000;
+			}
+		}
+		if(tCallFilename[0]!==void && tExScene.result!=='start2'){	//タイトルコール
+			var rnd = (int)(Math.random() * tCallFilename.count);
+			tSound.play("voice",tCallFilename[rnd],100,1,0,0);
+		}
+		if(tExScene.result==='start2') tExScene.result='';
+	}
+
+	function finish(){
+/*
+		if(layer!==void){
+			layer.opacity=0;
+			layer.visible=false;
+			invalidate layer;
+			layer=void;
+		}
+*/
+		releaseLayer();
+		releaseItems();
+		phase=PNone;
+	}
+
+	function isBusy(){
+		return phase!=PNone;
+	}
+
+	//--------------------------------------------------------------
+	//	ボタン登録
+	//--------------------------------------------------------------
+	function makeButton(){
+		var flag=tGlobalData.isTitle();
+
+		releaseItems();
+		if(images!==void){
+			invalidate images;
+		}
+		items=new Array();
+		images=new Array();
+
+		var bgmCnt = 0;
+		var tCallCnt = 0;
+		var lines=new Array();
+		lines.load(FileTitleSetting);
+		for(var i=0;i<lines.count;i++){
+			var key,object,idx;
+			if((idx=lines[i].indexOf(":"))>0){
+				key=lines[i].substring(0,idx).trim();
+				object=lines[i].substring(idx+1).trim();
+			}
+			if(key!==void&&object!=""){
+				if("image"==key){
+					var param=object.split(' \t',,true);
+					var temp=new TxLayer(owner,layer);
+					temp.loadImages(param[0]);
+					temp.setSizeToImageSize();
+					temp.setPos(0,0);
+					temp.visible=true;
+					images.add(temp);
+				}else if("button"==key){
+					var param=object.split(' \t',,true);
+					var page=param[0];
+					var id=+param[1];
+					var tag=param[2];
+					var image=param[3];
+					var x=+param[4],y=+param[5];
+					var overSE=param[6];
+					var downSE=param[7];
+					var cursor=param[8];
+					var visible=param[9]=="true";
+					var object=param[10];
+					var temp=new TButton(owner,layer,event,tag);
+					temp.setImage(x,y,image);
+					temp.setObject(object);
+					temp.setCursor(cursor);
+					temp.setWipeDisabled(tCanvas.isWipe2);
+					if(overSE=="off"){temp.buttonStatus.overSE=void;}else if(overSE!="void"){temp.buttonStatus.overSE=overSE;}
+					if(downSE=="off"){temp.buttonStatus.downSE=void;}else if(downSE!="void"){temp.buttonStatus.downSE=downSE;}
+					tGlobalData.setTitle(id,flag?tGlobalData.getTitle(id):visible);
+					items[id]=%['page'=>page,'object'=>temp];
+				}else if("bgm"==key){
+					var param=object.split(' \t',,true);
+					//bgmFilename=param[0];
+					bgmFilename[bgmCnt] = param[0];
+					bgmCnt++;
+				}else if("voice"==key){
+					var param=object.split(' \t',,true);
+					tCallFilename[tCallCnt] = param[0];
+					tCallCnt++;
+				}
+			}
+		}
+
+		//	アイテム表示設定
+		showItem(page);
+	}
+
+	function showItem(page){
+		for(var i=0;i<items.count;i++){
+			if(items[i]!==void){
+				items[i].object.setVisible(items[i].page==page&&tGlobalData.getTitle(i));
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	イベント処理
+	//--------------------------------------------------------------
+	function event(param){
+		if(phase!=PTick){
+			return;
+		}
+		if("start"==param.tag){
+			tSound.stop(TrackBGM.sprintf(0),500);
+			tScript.initialize();
+			scriptFilename=param.object;
+			tExBGM.nowPlaying='';	//シーン回想以外でゲームスクリプトを再生する際は、初期化する
+			phase=PStartScript;
+		}else if("continue"==param.tag){
+			tSaveLoad.startLoad();
+			phase=PTickLoad;
+		}else if("config"==param.tag){
+			tConfig.start();
+			phase=PTickConfig;
+		}else if("extra"==param.tag){
+			showItem(page=PageExtra);
+		}else if("return"==param.tag){
+			showItem(page=PageNormal);
+		}else if("cgmode"==param.tag){
+			tExCG.start();
+			phase=PTickExCG;
+		}else if("scenemode"==param.tag){
+			tExScene.start();
+			phase=PTickExScene;
+		}else if("bgmmode"==param.tag){
+			tExBGM.start();
+			phase=PTickExBGM;
+		}else if("url"==param.tag){
+			System.shellExecute(param.object);
+		}else if("exit"==param.tag){
+//		tWindow.close();
+		tWindow.onCloseQuery(true);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	Tick
+	//--------------------------------------------------------------
+	function tick(){
+		switch(phase){
+			case PNone:
+				return false;
+			case PStart:
+				if(timer+10<=System.getTickCount()){
+					timer=System.getTickCount();
+					if(tGlobalData.data.environment.effectoff||(layer.opacity+=tSettings.changeSpeed/2)>=255){
+						layer.opacity=255;
+						tScript.initialize();
+						phase=PTick;
+					}
+				}
+				break;
+			case PTick:
+				break;
+			case PStartScript:
+				if(timer+10<=System.getTickCount()){
+					timer=System.getTickCount();
+					if(tGlobalData.data.environment.effectoff||(layer.opacity-=4)<=0){
+						finish();
+						tScript.loadScript(scriptFilename);
+					}
+				}
+				break;
+
+			//	load
+			case PTickLoad:
+				if(!tSaveLoad.isBusy()){
+					phase=PTick;
+				}
+				break;
+
+			//	config
+			case PTickConfig:
+				if(!tConfig.isBusy()){
+					phase=PTick;
+				}
+				break;
+
+			//	cgmode
+			case PTickExCG:
+				if(!tExCG.tick()){
+					phase=PTick;
+				}
+				break;
+
+			//	scenemode
+			case PTickExScene:
+				if(!tExScene.tick()){
+					if(tExScene.result===void){
+						phase=PTick;
+					}else{
+						finish();
+						tSound.stop(TrackBGM.sprintf(0),500);
+						tScript.initialize();
+						tScript.script.counter=tScript.jump(tExScene.result);
+						tScript.script.scene=true;
+					}
+				}
+				break;
+
+			//	bgmmode
+			case PTickExBGM:
+				if(!tExBGM.tick()){
+					phase=PTick;
+				}
+				break;
+
+			//	ゲーム終了時
+/*
+			case PTickEnd:
+				if(timer+10<=System.getTickCount()){
+					timer=System.getTickCount();
+					if(tGlobalData.data.environment.effectoff||(layer.opacity-=tSettings.changeSpeed)<=0){
+						layer.opacity=0;
+						if(!tSound.isPlay('sebtnup')){
+							tSaveLoad.close();
+							tGlobalData.save();
+							tWindow.test();
+						}
+					}
+				}
+				break;
+*/
+
+		}
+		return true;
+	}
+}
+
+//==============================================================
+//	TTitleLayer
+//==============================================================
+class TTitleLayer extends Layer{
+
+	var owner;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TTitleLayer(window,parent,owner){
+		super.Layer(window,parent);
+		this.owner=owner;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		super.finalize(...);
+	}
+
+	//--------------------------------------------------------------
+	//	Event
+	//--------------------------------------------------------------
+	function onMouseDown(x,y,button,shift){
+	}
+	function onMouseUp(x,y,button,shift){
+		if(button==mbRight){
+			if(owner.page==owner.PageExtra){
+				owner.showItem(owner.page=owner.PageNormal);
+			}
+		}
+		else if(button==mbLeft){
+			//ゲーム終了時演出のスキップ
+			if(tTitle.phase==tTitle.PTickEnd) tWindow.close();
+		}
+	}
+}

@@ -1,0 +1,76 @@
+//	セーブ、ロード画面
+
+//	背景
+//		page	image
+image:	save	save
+image:	load	load
+
+//	ボタン
+//		最後のページはauto
+//		最後-1のページはquick
+//		backとnextは無くてもよい
+//		逆に各ページが無くてもよい(tag2が数値のボタン)
+
+//		page	tag		image				x	y	overSE	downSE	cursor		tag2
+button:	all		page	ex_p_01				40	560	void	void	void		0
+button:	all		page	ex_p_02				70	560	void	void	void		1
+button:	all		page	ex_p_03				100	560	void	void	void		2
+button:	all		page	ex_p_04				130	560	void	void	void		3
+button:	all		page	ex_p_05				160	560	void	void	void		4
+button:	all		page	ex_p_06				190	560	void	void	void		5
+button:	all		page	ex_p_07				220	560	void	void	void		6
+button:	all		page	ex_p_08				250	560	void	void	void		7
+button:	all		page	ex_p_09				280	560	void	void	void		8
+//button:	all		page	saveloadpage6		640	32	void	void	void		5
+//button:	all		page	saveloadpage7		664	32	void	void	void		6
+//button:	all		page	saveloadpage8		688	32	void	void	void		7
+//button:	all		page	saveloadpage9		712	32	void	void	void		8
+button:	all		page	ex_p_09				836	32	void	void	void		9
+button:	all		page	ex_p_09				860	32	void	void	void		10
+//button:	all		page	saveloadpageback	160	536	void	void	void		back
+//button:	all		page	saveloadpagenext	352	536	void	void	void		next
+button:	all		return	ex_p_10				640	560	void	void	void
+
+
+//	データレイアウト
+//		page		１ページの項目の配置					(tag/横/縦/ページ数)
+//					ファイル名は "%s%d",image,page で作られる
+
+//		page		tag
+layout:	all			page		2	5	11
+layout:	all			font		HGSｺﾞｼｯｸE,ＭＳ ゴシック
+
+//		caption		表示されているページ名の画像
+//					"Page1"とかそんな画像
+//					tag			image					x	y
+layout:	all			caption		ex_p_0					808 536
+
+//		base		ベースのイメージ(ボタン)、座標、間隔
+//					tag			image					x	y	pitch x	pitch y
+layout:	save		base		saveload_p				25	75	390		95	
+layout:	load		base		saveload_p				25	75	390		95	
+
+//		thumbnail	サムネイルの座標、サイズ
+//					tag			x	y	width	height
+layout:	all			thumbnail	8	10	80		60
+
+//		message		メッセージの座標
+/					tag			x	y	width	height	size	color
+layout:	all			message		98	28	240		24		12		0xe0e0e0
+
+//		date		日付の座標
+//					tag			x	y	size	color
+layout:	all			date		210	60	14		0xe0e0e0
+
+//		savetitle	セーブタイトルの座標
+//					tag			x	y	size	color
+layout:	all			savetitle	90	10	10		0xe0e0e0
+
+layout:	all			overSE		void
+layout:	all			downSE		void
+
+//		cursor		カーソル
+//					tag			cursor
+layout:	all			cursor		void
+
+layout:	all			newicon		savenew

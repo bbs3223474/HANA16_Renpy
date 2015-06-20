@@ -1,0 +1,253 @@
+//==============================================================
+//	エフェクト
+//==============================================================
+class TEffect{
+
+	var owner;
+	var layer;
+	var layers;
+	var filename="testimage";
+	var max=10;
+	var pop=100;
+	var interval=20;
+	var intervalrange=10;
+	var patterncount=10;
+	var	patterninterval=1000;
+	var movetype=0;
+	var startFlag;
+	var fadeFlag;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TEffect(owner){
+		this.owner=owner;
+		layers=new Array();
+		startFlag=false;
+		fadeFlag=0;
+		layer=owner.layerEffect;
+		layer.visible=false;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+	}
+
+	//--------------------------------------------------------------
+	//	tick
+	//--------------------------------------------------------------
+	function tick(){
+
+		if(fadeFlag>0){
+			layer.opacity=range255(layer.opacity+fadeFlag);
+			if(layer.opacity==255){
+				fadeFlag=0;
+			}
+		}else if(fadeFlag<0){
+			layer.opacity=range255(layer.opacity+fadeFlag);
+			if(layer.opacity==0){
+				fadeFlag=0;
+				layer.visible=false;
+			}
+		}
+
+		if(startFlag){
+			var rnd=(int)(Math.random()*pop);
+			if(rnd==0){
+				add();
+			}
+
+			for(var i=0;i<max;i++){
+				if(layers[i]!==void){
+					layers[i].tick();
+					if(!layers[i].isBusy()){
+						invalidate layers[i];
+						layers[i]=void;
+					}
+				}
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	登録
+	//--------------------------------------------------------------
+	function add(){
+		for(var i=0;i<max;i++){
+			if(layers[i]===void){
+				layers[i]=new TEffectChip(owner,filename,interval+(int)(Math.random()*intervalrange),patterncount,patterninterval,movetype);
+				break;
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	設定
+	//--------------------------------------------------------------
+	function setParam(filename,max,pop,interval,patterncount,patterninterval,movetype){
+		tLocalData.setScriptEffectFilename(this.filename=filename);
+		tLocalData.setScriptEffectMax(this.max=max);
+		tLocalData.setScriptEffectPop(this.pop=pop);
+		tLocalData.setScriptEffectInterval(this.interval=interval);
+		tLocalData.setScriptEffectPatternCount(this.patterncount=patterncount);
+		tLocalData.setScriptEffectPatternInterval(this.patterninterval=patterninterval);
+		tLocalData.setScriptEffectMoveType(this.movetype=movetype);
+	}
+
+	function restart(){
+		clear();
+		filename=tLocalData.getScriptEffectFilename();
+		max=tLocalData.getScriptEffectMax();
+		pop=tLocalData.getScriptEffectPop();
+		interval=tLocalData.getScriptEffectInterval();
+		patterncount=tLocalData.getScriptEffectPatternCount();
+		patterninterval=tLocalData.getScriptEffectPatternInterval();
+		movetype=tLocalData.getScriptEffectMoveType();
+		startFlag=tLocalData.getScriptEffectStartFlag();
+		if((layer.visible=tLocalData.getScriptEffectVisible())!=false){
+			layer.opacity=255;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	開始、停止
+	//--------------------------------------------------------------
+	function start(){
+		tLocalData.setScriptEffectStartFlag(startFlag=true);
+	}
+
+	function stop(){
+		tLocalData.setScriptEffectStartFlag(startFlag=false);
+	}
+
+	function clear(){
+		for(var i=0;i<max;i++){
+			if(layers[i]!==void){
+				invalidate layers[i];
+				layers[i]=void;
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	フェード
+	//--------------------------------------------------------------
+	function fadeIn(){
+		layer.visible=true;
+		layer.opacity=0;
+		fadeFlag=2;
+		tLocalData.setScriptEffectVisible(true);
+	}
+
+	function fadeOut(){
+		layer.visible=true;
+		layer.opacity=255;
+		fadeFlag=-2;
+		tLocalData.setScriptEffectVisible(false);
+	}
+
+	function show(){
+		layer.opacity=255;
+		tLocalData.setScriptEffectVisible(layer.visible=true);
+	}
+	function hide(){
+		tLocalData.setScriptEffectVisible(layer.visible=false);
+	}
+}
+
+//==============================================================
+//	チップ
+//==============================================================
+class TEffectChip{
+
+	var owner;
+	var layer;
+	var x,y;
+	var px,pcx,ptx,pty;
+	var interval,time,ptime;
+	var patterncount,patterninterval;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TEffectChip(owner,filename,interval,patterncount,patterninterval,movetype){
+		this.owner=owner;
+		this.interval=interval;
+		this.patterncount=patterncount;
+		this.patterninterval=patterninterval;
+
+		layer=new TLayer(owner,owner.layerEffect);
+		layer.loadImages(filename);
+		layer.setSize(layer.imageWidth/patterncount,layer.imageHeight);
+		layer.setPos(x=(int)(Math.random()*1024),y=-layer.height);
+
+		if(patterninterval==0&&patterncount>1){
+			layer.imageLeft=-(layer.imageWidth/patterncount*(int)(Math.random()*patterncount));
+			this.patterncount=1;
+		}
+
+		layer.visible=true;
+
+		px=(int)(Math.random()*2)*2-1;
+		pcx=0;
+		if(movetype==0){
+			ptx=[0.1,0.2,0.2,0.3,0.3,0.3,0.4,0.4,0.4,0.4,0.5,0.5,0.5,0.5,0.5,0.6,0.6,0.6,0.6,0.6,0.6,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.5,0.5,0.5,0.5,0.5,0.4,0.4,0.4,0.4,0.3,0.3,0.3,0.2,0.2,0.1];
+			pty=1;
+		}else if(movetype==1){
+			ptx=[0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5];
+			pty=1;
+		}else if(movetype==2){
+			ptx=[0];
+			pty=(int)(Math.random()*20)+20;
+		}else{
+			ptx=[1];
+			pty=1;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+	}
+
+	//--------------------------------------------------------------
+	//	tick
+	//--------------------------------------------------------------
+	function tick(){
+
+		var now=System.getTickCount();
+
+		if(patterncount>1){
+			if(now>ptime+patterninterval){
+				ptime=now;
+				if(layer.imageLeft-layer.imageWidth/patterncount<=-layer.imageWidth){
+					layer.imageLeft=0;
+				}else{
+					layer.imageLeft-=layer.imageWidth/patterncount;
+				}
+			}
+		}
+
+		if(now>time+interval){
+			time=now;
+			layer.setPos((int)(x+=px*ptx[pcx++]),y+=pty);
+			if(pcx>=ptx.length){
+				pcx=0;
+				if(!(int)(Math.random()*2)){
+					px*=-1;
+				}
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	isBusy
+	//--------------------------------------------------------------
+	function isBusy(){
+		return (x>-layer.width-64&&x<owner.layerEffect.width+64)&&y<owner.layerEffect.height;
+	}
+
+}

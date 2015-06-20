@@ -1,0 +1,97 @@
+//==============================================================
+//	ムービー
+//==============================================================
+class TMovie extends VideoOverlay{
+
+	var	videoLayer;
+	var status;
+	var skipoff;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TMovie(){
+		super.VideoOverlay(tWindow);
+		status="stop";
+		skipoff=false;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		super.finalize();
+	}
+
+	//--------------------------------------------------------------
+	//	video layer
+	//--------------------------------------------------------------
+	function createVideoLayer(){
+		if(videoLayer===void){
+			videoLayer=new TLayer(tWindow,tWindow.primaryLayer);
+			tWindow.add(videoLayer);
+			videoLayer.setPos(0,0,tSettings.canvasWidth,tSettings.canvasHeight);
+			videoLayer.type=ltOpaque;
+			videoLayer.visible=true;
+			layer1=videoLayer;
+		}
+	}
+
+	function destroyVideoLayer(){
+		if(videoLayer!==void){
+			tWindow.remove(videoLayer);
+			invalidate videoLayer;
+			videoLayer=void;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	play
+	//--------------------------------------------------------------
+	function play(storage){
+
+		//	videレイヤ作成
+		createVideoLayer();
+		mode=vomLayer;
+		visible=true;
+
+		try{
+			storage+=ExtMovie;
+			super.open(storage);
+			super.audioVolume=100*tGlobalData.getVolumeBGM();
+			super.play();
+			status="play";
+		}catch(e){
+			if(e.message.indexOf(".dll")!=-1)throw e;
+			dm("ムービー "+storage+" を再生できません : "+e.message);
+			return;
+		}
+	}
+
+	function stop(){
+		super.stop();
+		visible=false;
+		destroyVideoLayer();
+		skipoff=false;
+	}
+
+	//--------------------------------------------------------------
+	//	Event
+	//--------------------------------------------------------------
+	function onStatusChanged(status){
+		if(status=="stop"){
+			if(this.status=="play"){
+				this.status="stop";
+				stop();
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	Event
+	//--------------------------------------------------------------
+	function isBusy(){
+		return	status!="stop";
+	}
+
+}

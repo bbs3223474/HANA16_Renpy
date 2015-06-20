@@ -1,0 +1,563 @@
+//==============================================================
+//	TImageBeta
+//==============================================================
+class TImageBeta{
+
+	var owner;
+	var id;
+	var mylayers;
+	var layer,layerOriginal,layerThumbnail,eyeLayer;
+
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TImageBeta(owner,id){
+		this.owner=owner;
+		this.id=id;
+		mylayers=new Dictionary();
+		mylayers.move=new Dictionary();
+		mylayers.alpha=new Dictionary();
+		mylayers.zoom=new Dictionary();
+		mylayers.anime=new Dictionary();
+		mylayers.eye=new Dictionary();
+		mylayers.move.flag=false;
+		mylayers.alpha.flag=false;
+		mylayers.zoom.flag=false;
+		mylayers.eye.flag=false;
+		mylayers.render=false;
+		layer=new TLayer(tWindow,owner);
+		layer.type=ltAlpha;
+		layer.visible=false;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		invalidate layer;
+		invalidate layerOriginal;
+		invalidate layerThumbnail;
+		invalidate eyeLayer;
+		invalidate mylayers;
+	}
+
+	//--------------------------------------------------------------
+	//	初期化
+	//--------------------------------------------------------------
+//	function initialize(){
+//	}
+//
+//	function initializeWidthStatus(status){
+//	}
+
+	//--------------------------------------------------------------
+	//	描画
+	//--------------------------------------------------------------
+	function setRender(){
+		mylayers.render=true;
+	}
+
+	function render(){
+		var layers=tLocalData.data.layers[id];
+//		var result=false;
+
+		loadImage();
+
+		//	イメージのレンダリング
+		if(mylayers.render){
+			var renderLayer=tCanvasBeta.thumbnail&&layerThumbnail!==void?layerThumbnail:layerOriginal;
+			var size=1.0;
+			if(mylayers.zoom.flag){
+				size=mylayers.zoom.csize;
+			}else{
+				size=layers.size;
+			}
+			if(size==1.0){
+				//	等倍
+				layer.setSize(renderLayer.width,renderLayer.height);
+				layer.copyRect(0,0,renderLayer,0,0,renderLayer.width,renderLayer.height);
+				if(eyeLayer!==void&&layers.eye){
+					layer.copyRect(mylayers.eye.x,mylayers.eye.y,eyeLayer,0,mylayers.eye.height*mylayers.eye.index,eyeLayer.width,mylayers.eye.height);
+				}
+			}else{
+				//	拡大縮小
+				var width=int(renderLayer.width*size);
+				var height=int(renderLayer.height*size);
+				layer.setSize(width,height);
+				if(eyeLayer!==void&&layers.eye){
+					//	目パチがあるときはコピーしてから拡大
+					var temp=new TLayer(tWindow,layer);
+					temp.type=ltAlpha;
+					temp.setSize(renderLayer.width,renderLayer.height);
+					temp.copyRect(0,0,renderLayer,0,0,renderLayer.width,renderLayer.height);
+					temp.copyRect(mylayers.eye.x,mylayers.eye.y,eyeLayer,0,mylayers.eye.height*mylayers.eye.index,eyeLayer.width,mylayers.eye.height);
+					layer.stretchCopy(0,0,width,height,temp,0,0,temp.width,temp.height,layers.type);
+					invalidate temp;
+				}else{
+					layer.stretchCopy(0,0,width,height,renderLayer,0,0,renderLayer.width,renderLayer.height,layers.type);
+				}
+			}
+
+			//★filter（個別）
+			//ファイル名チェック
+			var filterFlag=true;
+			for(var i=0;i<tSettings.filter.outside.count;i++){
+				if(tLocalData.data.layers[id].filename!==void){
+					if(tLocalData.data.layers[id].filename.substr(0,tSettings.filter.outside[i].length)===tSettings.filter.outside[i]){
+						filterFlag=false;
+						break;
+					}
+				}
+			}
+			//ファイル名チェックを通過したもののみ処理
+			if(filterFlag){
+				if(tLocalData.getScriptFilter()!=="default"&&tSettings.filter[tLocalData.getScriptFilter()][0]===id.substr(0,tSettings.filter[tLocalData.getScriptFilter()][0].length)){
+					if(tSettings.filter[tLocalData.getScriptFilter()][10]==="true") layer.doGrayScale();
+					layer.adjustGamma(+tSettings.filter[tLocalData.getScriptFilter()][1],+tSettings.filter[tLocalData.getScriptFilter()][2],+tSettings.filter[tLocalData.getScriptFilter()][3],
+								+tSettings.filter[tLocalData.getScriptFilter()][4],+tSettings.filter[tLocalData.getScriptFilter()][5],+tSettings.filter[tLocalData.getScriptFilter()][6],
+								+tSettings.filter[tLocalData.getScriptFilter()][7],+tSettings.filter[tLocalData.getScriptFilter()][8],+tSettings.filter[tLocalData.getScriptFilter()][9]);
+				}
+			}
+
+			//	被写界深度
+			var depth=tLocalData.data.depth;
+			if(depth!==void){
+				var value;
+				if(layers.order<50){value=0;
+				}else if(layers.order<100){value=1;
+				}else if(layers.order<150){value=2;
+				}else if(layers.order<200){value=3;
+				}else{value=4;
+				}
+				var blur=(value-depth>=0?value-depth:depth-value);
+				layer.doBoxBlur(blur,blur);
+			}
+
+			//	モーションブラー
+			if(mylayers.blur){
+				layer.operateRect(mylayers.blur.x*2,mylayers.blur.y*2,layer,0,0,layer.width,layer.height,omPsNormal,128);
+				layer.operateRect(mylayers.blur.x*4,mylayers.blur.y*4,layer,0,0,layer.width,layer.height,omPsNormal,64);
+				layer.operateRect(mylayers.blur.x*8,mylayers.blur.y*8,layer,0,0,layer.width,layer.height,omPsNormal,8);
+			}
+
+			mylayers.render=false;
+//			result=true;
+		}
+
+		//	座標設定
+		var camera=tLocalData.data.camera;
+		var sx=layers.x+layers.vx;
+		var sy=layers.y+layers.vy;
+		var ofsx=(owner.width-layer.width)/2;
+		var ofsy=(owner.height-layer.height)/2;
+		if(mylayers.move.flag){
+			//	移動中は move.cx move.cy を使う
+			sx=mylayers.move.cx+layers.vx;
+			sy=mylayers.move.cy+layers.vy;
+		}
+		if(camera!==void&&camera.enabled){
+			var camx,camy;
+			if(tCanvasBeta.camera.move.flag){
+				camx=tCanvasBeta.camera.move.cx;
+				camy=tCanvasBeta.camera.move.cy;
+			}else{
+				camx=camera.x;
+				camy=camera.y;
+			}
+			var value;
+			if(layers.order<50){value=camera.block[0];
+			}else if(layers.order<100){value=camera.block[1];
+			}else if(layers.order<150){value=camera.block[2];
+			}else if(layers.order<200){value=camera.block[3];
+			}else{value=camera.block[4];
+			}
+			sx=layers.camx+(layers.x-layers.camx+camx)*value;
+			sy=layers.camy+(layers.y-layers.camy+camy)*value;
+		}
+//		if(layer.left!=sx+ofsx||layer.top!=sy+ofsy){
+//			result=true;
+//		}
+
+		//	座標系
+		if(tSettings.screenCenter){
+			//	画面中央
+			layer.setPos(sx+ofsx,sy+ofsy);
+		}else{
+			//	左上
+			var x=sx+ofsx-(tSettings.canvasWidth\2-layerOriginal.width\2);
+			var y=sy+ofsy-(tSettings.canvasHeight\2-layerOriginal.height\2);
+			if(id!="bg"){
+				x-=layerOriginal.width\2;
+			}
+			layer.setPos(x,y);
+		}
+		mylayers.x=layers.x;
+		mylayers.y=layers.y;
+
+		//	alpha
+		var alpha;
+		if(mylayers.alpha.flag){
+			alpha=mylayers.alpha.current;
+		}else{
+			alpha=layers.alpha;
+		}
+//		if(layer.opacity!=alpha){
+			layer.opacity=alpha;
+//			result=true;
+//		}
+
+		//	表示
+		if(layer.absolute!=orderOffset-layers.order){
+			layer.absolute=orderOffset-layers.order;
+//			result=true;
+		}
+		if(layer.visible!=(mylayers.visible=layers.visible)){
+			layer.visible=mylayers.visible;
+//			result=true;
+		}
+//		return result;
+	}
+
+	//--------------------------------------------------------------
+	//	イメージを読み込み
+	//--------------------------------------------------------------
+	function loadImage(){
+		var layers=tLocalData.data.layers[id];
+		if(layers.color){
+			if(layers.color!=mylayers.color){
+				layerOriginal=new TLayer(tWindow,layer);
+				layerOriginal.type=ltAlpha;
+				layerOriginal.setSize(owner.width,owner.height);
+				layerOriginal.fillRect(0,0,layerOriginal.width,layerOriginal.height,layers.color);
+				mylayers.color=layers.color;
+				mylayers.filename=layers.filename;
+				mylayers.alpha.current=layers.alpha;
+				mylayers.zoom.size=1.0;
+				mylayers.render=true;
+//				dm("color:"+mylayers.filename);
+			}
+		}else{
+			var filename=layers.filename;
+			if(layers.anime!==void&&mylayers.anime.image!==void){
+				//	アニメ中は mylayers.anime.image を参照
+				filename=mylayers.anime.image;
+			}
+			if(filename!=mylayers.filename){
+				layerOriginal=new TLayer(tWindow,layer);
+				layerOriginal.type=ltAlpha;
+				layerOriginal.loadImages(filename);
+				layerOriginal.setSizeToImageSize();
+				mylayers.color=layers.color;
+				mylayers.filename=filename;
+				mylayers.alpha.current=layers.alpha;
+				mylayers.zoom.size=1.0;
+				mylayers.render=true;
+//				dm(filename);
+			}
+			if(tCanvasBeta.thumbnail&&layerThumbnail===void){
+				if(Storages.getPlacedPath(mylayers.filename+"_thumbnail.png")!=""||Storages.getPlacedPath(mylayers.filename+"_thumbnail.jpg")!=""||Storages.getPlacedPath(mylayers.filename+"_thumbnail.tlg")!=""){
+					layerThumbnail=new TLayer(tWindow,layer);
+					layerThumbnail.type=ltAlpha;
+					layerThumbnail.loadImages(mylayers.filename+"_thumbnail");
+					layerThumbnail.setSizeToImageSize();
+					mylayers.render=true;
+				}
+			}else if(!tCanvasBeta.thumbnail&&layerThumbnail!==void){
+				invalidate layerThumbnail;
+				layerThumbnail=void;
+				mylayers.render=true;
+			}
+			if(mylayers.eye.filename===void){
+				if(tCanvasBeta.eyeTable[layers.filename]!==void){
+					mylayers.eye.filename=tCanvasBeta.eyeTable[layers.filename].filename;
+					mylayers.eye.x=tCanvasBeta.eyeTable[layers.filename].x;
+					mylayers.eye.y=tCanvasBeta.eyeTable[layers.filename].y;
+					mylayers.eye.times=tCanvasBeta.eyeTable[layers.filename].times;
+					mylayers.eye.time=System.getTickCount();
+					mylayers.eye.index=0;
+					eyeLayer=new TLayer(tWindow,layer);
+					eyeLayer.type=ltAlpha;
+					eyeLayer.loadImages(mylayers.eye.filename);
+					eyeLayer.setSizeToImageSize();
+					mylayers.eye.height=eyeLayer.height/mylayers.eye.times.count;
+				}else{
+					mylayers.eye.filename="";
+				}
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	ステータス
+	//--------------------------------------------------------------
+//	function setXY(x,y){
+//		layer.setPos(getCenter()?x-layer.width\2:x,y);
+//		if(layer2!==void){
+//			layer2.setPos(getCenter()?x-layer2.width\2:x,y);
+//		}
+//		tLocalData.setImageX(id,x);
+//		tLocalData.setImageY(id,y);
+//	}
+//
+//	function setX(x){
+//		layer.left=getCenter()?x-layer.width\2:x;
+//		if(layer2!==void){
+//			layer2.left=getCenter()?x-layer2.width\2:x;
+//		}
+//		tLocalData.setImageX(id,x);
+//	}
+//
+//	function setY(x,y){
+//		layer.top=y;
+//		if(layer2!==void){
+//			layer2.top=y;
+//		}
+//		tLocalData.setImageY(id,y);
+//	}
+//
+//	function addXY(x,y){
+//		setXY(getX()+x,getY()+y);
+//	}
+//
+//	function addX(x){
+//		setX(getX()+x);
+//	}
+//
+//	function addY(y){
+//		setY(getY()+y);
+//	}
+//
+	function getX(){
+		return tLocalData.data.layers[id].x;
+	}
+
+	function getY(){
+		return tLocalData.data.layers[id].y;
+	}
+
+//	function setCenter(flag){
+//		tLocalData.setImageCenter(id,flag);
+//		setXY(getX(),getY());
+//
+//	}
+//
+//	function getCenter(){
+//		return tLocalData.getImageCenter(id);
+//	}
+
+//	function setOrder(order){
+//	}
+
+//	function setSize(size){
+//		tLocalData.setImageSize(id,size);
+//	}
+//
+//	function getSize(){
+//		return tLocalData.getImageSize(id);
+//	}
+//
+//	function getWidth(){
+//		return layer.width;
+//	}
+//
+//	function getHeight(){
+//		return layer.height;
+//	}
+//
+//	function setVisible(flag){
+//		tLocalData.setImageVisible(id,layer.visible=flag);
+//	}
+//
+//	function getVisible(){
+//		return tLocalData.getImageVisible(id);
+//	}
+//
+//	function setVisible2(flag){
+//		if(layer2!==void){
+//			layer2.bringToFront();
+//			layer2.visible=flag;
+//		}
+//	}
+
+	function setBlur(flag){
+		var layers=tLocalData.data.layers[id];
+		layers.blur=flag;
+	}
+
+	function setShakeXY(x,y){
+		layer.setPos(x,y);
+	}
+
+	//--------------------------------------------------------------
+	//	アニメーション
+	//--------------------------------------------------------------
+	function setMove(x,y,time=1000){
+		var layers=tLocalData.data.layers[id];
+		mylayers.move.flag=true;
+		mylayers.move.sx=mylayers.move.cx=layers.x;
+		mylayers.move.sy=mylayers.move.cy=layers.y;
+		layers.x=x;
+		layers.y=y;
+		mylayers.move.startTime=System.getTickCount();
+		mylayers.move.endTime=mylayers.move.startTime+time;
+		if(layers.blur){
+			mylayers.blur=new Dictionary();
+			var mx=mylayers.move.sx-x;
+			var my=mylayers.move.sy-y;
+			mylayers.blur.x=mx==0?0:(mx>0?1:-1);
+			mylayers.blur.y=my==0?0:(my>0?1:-1);
+			mylayers.render=true;
+
+			var a;
+			a=Math.atan2(my,mx)*180/Math.PI+(180+22.5);
+			if(a<45){mylayers.blur.x=-1;mylayers.blur.y=0;
+			}else if(a<90){mylayers.blur.x=-1;mylayers.blur.y=-1;
+			}else if(a<135){mylayers.blur.x=0;mylayers.blur.y=-1;
+			}else if(a<180){mylayers.blur.x=1;mylayers.blur.y=-1;
+			}else if(a<225){mylayers.blur.x=1;mylayers.blur.y=0;
+			}else if(a<270){mylayers.blur.x=1;mylayers.blur.y=1;
+			}else if(a<315){mylayers.blur.x=0;mylayers.blur.y=1;
+			}else if(a<360){mylayers.blur.x=-1;mylayers.blur.y=1;
+			}else{mylayers.blur.x=-1;mylayers.blur.y=0;
+			}
+		}
+	}
+
+	function isMove(){
+		return mylayers.move.flag;
+	}
+
+	function setAlpha(value,time=1000){
+		var layers=tLocalData.data.layers[id];
+		if(time==0){
+			layers.alpha=range255(value);
+		}else{
+			mylayers.alpha.flag=true;
+			mylayers.alpha.current=mylayers.alpha.start=layers.alpha;
+			layers.alpha=range255(value);
+			mylayers.alpha.startTime=System.getTickCount();
+			mylayers.alpha.endTime=mylayers.alpha.startTime+time;
+		}
+	}
+
+	function isAlpha(){
+		return mylayers.alpha.flag;
+	}
+
+	function cancelAnime(){
+		mylayers.zoom.flag=false;
+		mylayers.move.flag=false;
+		mylayers.alpha.flag=false;
+		if(mylayers.blur){
+			delete mylayers.blur;
+		}
+		mylayers.render=true;
+//		tLocalData.data.layers[id].render=true;
+	}
+
+	function setZoom(size,time=1000,type=stNearest){
+		var layers=tLocalData.data.layers[id];
+		mylayers.zoom.flag=true;
+		mylayers.zoom.csize=mylayers.zoom.size=layers.size;
+		layers.size=size;
+		layers.type=type;
+		mylayers.zoom.startTime=System.getTickCount();
+		mylayers.zoom.endTime=mylayers.zoom.startTime+time;
+	}
+
+	function isZoom(){
+		return mylayers.zoom.flag;
+	}
+
+	function setAnime(pattern){
+		mylayers.anime.pattern=tScript.animetionTable[pattern];
+		mylayers.anime.counter=0;
+		mylayers.anime.timer=0;
+		tLocalData.data.layers[id].anime=pattern;
+	}
+
+	function stopAnime(){
+		tLocalData.data.layers[id].anime=void;
+	}
+
+	//--------------------------------------------------------------
+	//	tick
+	//--------------------------------------------------------------
+	function tick(time){
+		var layers=tLocalData.data.layers[id];
+		if(!tScript.isNext()&&layers.anime!==void){
+			if(time>=mylayers.anime.timer){
+				while(1){
+					if(mylayers.anime.pattern[mylayers.anime.counter]=="goto"){
+						mylayers.anime.counter=+mylayers.anime.pattern[mylayers.anime.counter+1];
+					}else if(mylayers.anime.pattern[mylayers.anime.counter]=="end"){
+						layers.anime=void;
+						break;
+					}else{
+						mylayers.anime.image=mylayers.anime.pattern[mylayers.anime.counter++];
+						mylayers.anime.timer=time+ +mylayers.anime.pattern[mylayers.anime.counter++];
+						layers.render=true;
+						break;
+					}
+				}
+			}
+		}
+		if(mylayers.move.flag){
+			mylayers.move.cx=getCurrent(time,mylayers.move.startTime,mylayers.move.endTime,mylayers.move.sx,getX());
+			mylayers.move.cy=getCurrent(time,mylayers.move.startTime,mylayers.move.endTime,mylayers.move.sy,getY());
+			if(time>=mylayers.move.endTime){
+				mylayers.move.cx=getX();
+				mylayers.move.cy=getY();
+				mylayers.move.flag=false;
+				if(mylayers.blur){
+					delete mylayers.blur;
+					mylayers.render=true;
+				}
+			}
+			layers.render=true;
+		}
+		if(mylayers.alpha.flag){
+			mylayers.alpha.current=range255(getCurrent(time,mylayers.alpha.startTime,mylayers.alpha.endTime,mylayers.alpha.start,layers.alpha));
+			if(time>=mylayers.alpha.endTime){
+				mylayers.alpha.current=layers.alpha;
+				mylayers.alpha.flag=false;
+			}
+			layers.render=true;
+		}
+		if(!tScript.isNext()&&mylayers.zoom.flag){
+			mylayers.zoom.csize=getCurrent(time,mylayers.zoom.startTime,mylayers.zoom.endTime,mylayers.zoom.size*1000,layers.size*1000)/1000;
+			if(time>=mylayers.zoom.endTime){
+				mylayers.zoom.csize=layers.size;
+				mylayers.zoom.flag=false;
+			}
+			mylayers.render=true;
+			layers.render=true;
+		}
+		if(layers.eye){
+			if(mylayers.eye.filename!==void&&mylayers.eye.filename!=""){
+				if(+mylayers.eye.time+ +mylayers.eye.times[mylayers.eye.index]<=time){
+					var offset=0;
+					if(++mylayers.eye.index>=mylayers.eye.times.count){
+						mylayers.eye.index=0;
+						offset=(int)(Math.random()*500);
+					}
+					mylayers.eye.time=time+offset;
+					mylayers.render=true;
+					layers.render=true;
+				}
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	現在位置
+	//--------------------------------------------------------------
+	function getCurrent(currentTime,startTime,endTime,startPoint,endPoint){
+		if(endTime-startTime){
+			return (int)(+startPoint+(+endPoint-+startPoint)*(+currentTime-+startTime)/(+endTime-+startTime)+0.5);
+		}else{
+			return +endPoint;
+		}
+	}
+}

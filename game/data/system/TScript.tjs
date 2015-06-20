@@ -1,0 +1,2465 @@
+//==============================================================
+//	スクリプト
+//==============================================================
+class TScript{
+
+	var assignLayer;
+	var assignFlag;
+	var assignPos;
+	var script;
+	var waitKey,waitSystem,waitTime,waitEffectFade,waitCamera;
+	var waitListAnime;
+	var waitListSound;
+	var wipeTable;
+	var expressiontemp;
+	var animetionTable;
+
+	var ScNone=0,ScComment=1,SCommand=2,ScMessage=3,ScMessageNoWait=4;
+	var MessageEndCodeNormal=0,MessageEndCodeContinue=1;
+
+	//	script.name						現在のスクリプト名
+	//	script.counter					実行中の位置
+	//	script.lines[]					スクリプトデータ
+	//	script.command[]				解析後のコマンド＆パラメータ
+	//	script.compatibility			互換モード
+	//	script.analysis[]				解析した行のステータス
+	//	script.kidoku%[]				既読フラグポイント
+	//	script.select%[]				選択肢フラグポイント
+	//	script.next						次の選択肢までスキップ
+	//	script.nowMessage				現在表示されているであろうメッセージ文字列
+
+	var reSkip = true;	//★追加（一時的にスキップ機能を停止する）
+	var bgvoiceCollision=0;	//バックグラウンドボイスのステータス（主にボイスが衝突しているかどうかの判定に使用 0:停止 1:再生中 2:ループなし再生中 3:一時停止 4:ループなし一時停止 5:ボイス終了待ち
+
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TScript(){
+		script=new Dictionary();
+		script.analysis=new Dictionary();
+		waitListAnime=new Array();
+		waitListSound=new Array();
+		expressiontemp=new Dictionary();
+		expressiontemp.album=new Dictionary();
+		expressiontemp.bgm=new Dictionary();
+		expressiontemp.scene=new Dictionary();
+		expressiontemp.title=new Dictionary();
+
+		wipeTable=%[
+			"flash"=>WipeFlash,					"fade"=>WipeFade,
+			"htblind"=>WipeBlindTop,			"blindtop"=>WipeBlindTop,					"hbblind"=>WipeBlindBottom,			"blindbottom"=>WipeBlindBottom,
+			"vlblind"=>WipeBlindLeft,			"blindleft"=>WipeBlindLeft,					"vrblind"=>WipeBlindRight,			"blindright"=>WipeBlindRight,
+			"ttob"=>WipeTop,					"top"=>WipeTop,								"btot"=>WipeBottom,					"bottom"=>WipeBottom,
+			"ltor"=>WipeLeft,					"left"=>WipeLeft,							"rtol"=>WipeRight,					"right"=>WipeRight,
+			"hin"=>WipeHorizontalIn,			"horizontalin"=>WipeHorizontalIn,			"hout"=>WipeHorizontalOut,			"horizontalout"=>WipeHorizontalOut,
+			"vin"=>WipeVerticalIn,				"verticalin"=>WipeVerticalIn,				"vout"=>WipeVerticalOut,			"verticalout"=>WipeVerticalOut,
+			"hshutter"=>WipeHorizontalShutter,	"horizontalshutter"=>WipeHorizontalShutter,	"vshutter"=>WipeVerticalShutter,	"verticalshutter"=>WipeVerticalShutter,
+			"boxin"=>WipeBoxIn,					"boxout"=>WipeBoxOut,						"circlein"=>WipeCircleIn,			"circleout"=>WipeCircleOut,
+			"rrotate"=>WipeRotateRight,			"rotateright"=>WipeRotateRight,				"lrotate"=>WipeRotateLeft,			"rotateleft"=>WipeRotateLeft,
+			"mask"=>WipeMask,
+			"scrollup"=>WipeScrollUp,			"scrolldown"=>WipeScrollDown,				"scrollleft"=>WipeScrollLeft,		"scrollright"=>WipeScrollRight,
+			"shake"=>WipeShake,					"shakev"=>WipeShakeV,						"shakeh"=>WipeShakeH,
+			"shake2"=>WipeShake2,				"shakev2"=>WipeShakeV2,						"shakeh2"=>WipeShakeH2,
+		];
+
+		//	assign読み込み
+		assignLayer=new Dictionary();
+		assignFlag=new Array();
+		assignPos=new Dictionary();
+		var text=new Array();
+		var comment=new RegExp("[\t ]*//.*");
+		var separater=new RegExp("(^[^:]*):(.*)");
+		var separaterSpace=new RegExp("^(.*)[\t ]+(.*)");
+		try{
+			text.load(FileScriptAssign);
+			for(var i=0;i<text.count;i++){
+				var str=comment.replace(text[i].trim(),"");
+				if(str.length){
+					var array=separater.match(str);
+					if("Compatibility"==array[1]){
+						if(array[2]=="true"){
+							script.compatibility=true;
+						}
+					}else if("layer"==array[1]){
+						var params=separaterSpace.match(array[2]);
+						if(params.count==3){
+							assignLayer[params[2]]=params[1];
+						}
+					}else if("flag"==array[1]){
+						var params=separaterSpace.match(array[2]);
+						if(params.count==3){
+							assignFlag.add([params[2],params[1]]);
+						}
+					}else if("pos"==array[1]){
+						var params=array[2].split(' ',,true);
+						if(params.count==3){
+							assignPos[params[0]]=%['x'=>+params[1],'y'=>+params[2]];
+						}
+					}
+				}
+			}
+		}catch(e){
+		}
+		assignFlag.sort(function(a,b){return a[0].length>b[0].length;});
+
+		//	anime読み込み
+		animetionTable=new  Dictionary();
+		text=new Array();
+		comment=new RegExp("[\t ]*//.*");
+		separater=new RegExp("(^[^:]*):(.*)");
+		separaterSpace=new RegExp("^(.*)[\t ]+(.*)");
+		try{
+			text.load(FileAnimrtionTable);
+			for(var i=0;i<text.count;i++){
+				var str=comment.replace(text[i].trim(),"");
+				if(str.length){
+					var array=separater.match(str);
+					if(array.length>=3){
+						animetionTable[array[1]]=array[2].split(",");
+					}
+				}
+			}
+		}catch(e){
+		}
+
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		delete status;
+		delete script;
+		delete waitListAnime;
+		delete waitListSound;
+		delete assignLayer;
+		delete expressiontemp;
+	}
+
+	//--------------------------------------------------------------
+	//	初期化、終了
+	//--------------------------------------------------------------
+	function initialize(){
+		//	フラグ初期化
+		tLocalData.initializeScript();
+		tLocalData.initializeFlags();
+
+		//	画面初期化
+		tGameSystem.setVisible(false);
+		tGameSystem.setHide(false);
+		tGameSystem.clearSkipCount();
+		tGameSystem.resetImage();
+		tGameSystem.renewImage();
+		tCanvas.initialize();
+		tCanvasBeta.initialize();
+		tMessage.setVisible(false,false);
+		tMessage.setHide(false);
+		tMessage.setMode(tMessage.ModeWindow);
+		tMessage.clearMessage();
+		tMessage.resetWindowImage();
+		tSelect.setHide();
+		tSelect.clearSelect();
+		tCanvas.clear();
+		tLog.clear();
+
+		//	Auto Skip off
+		tGameSystem.setSkip(false);
+		tGameSystem.setAuto(false);
+		reSkip = true;
+
+		script.next=false;
+		script.finish=false;
+		script.scene=false;
+	}
+
+	function startFinish(){
+		tGameSystem.setVisible(false);
+		tGameSystem.setHide(false);
+		tGameSystem.clearSkipCount();
+		tMessage.setVisible(false,true);
+		tMessage.setHide(false);
+		tMessage.setMode(tMessage.ModeWindow);
+		tSelect.clearSelect();
+		tMap.hide();
+		tEffect.stop();
+		tEffect.hide();
+		tEffect.clear();
+		tCanvasBeta.clearReserve();
+		tCanvasBeta.addReservSet("bg","black");
+		tCanvasBeta.addReservClear("all");
+		tCanvas.setWipe(WipeFade,,500);
+		invalidate tLocalData.data.script.button;
+		script.finish=true;
+	}
+
+	function finish(){
+		if(script.scene){
+			tTitle.start2();
+		}else{
+			tTitle.start();
+		}
+		script.scene=false;
+		script.finish=false;
+	}
+
+	//--------------------------------------------------------------
+	//	スクリプト読み込み
+	//--------------------------------------------------------------
+	function loadScript(filename,counter=0){
+		if(script.lines!==void){
+			invalidate script.lines;
+		}
+		script.lines=new Array();
+		try{
+			script.lines.load(filename+".src");
+		}catch(e){
+			System.inform("TScript::loadScript\nfile not found:"+filename+".src");
+			return;
+		}
+		tLocalData.setScriptName(script.name=filename);
+		tLocalData.setScriptCounter(script.counter=counter);
+		initializeKidoku();
+		initializeSelect();
+		waitKey=false;
+		waitSystem=false;
+		waitTime=0;
+		waitEffectFade=false;
+		waitCamera=false;
+		waitListAnime.clear();
+		waitListSound.clear();
+	}
+
+	function restartScript(){
+
+		//	sound 停止
+		tSound.stopBGM();
+		tSound.stopSE2();
+		tSound.stopVoice();
+		tSound.stopBgVoice();
+		bgvoiceCollision=0;	//BGV初期化
+
+		//	wipe命令で壊されるので tLocalData.data.reserv を保存
+		var reserv=new Array();
+		reserv.assignStruct(tLocalData.data.reserv);
+
+		//	選択肢消去
+		tSelect.clearSelect();
+
+		//	GameSystem 表示、非表示
+		tGameSystem.setVisible(tLocalData.getScriptGameSystemVisible());
+		tGameSystem.renewImage();
+
+		//	スクリプトロード
+		loadScript(tLocalData.getScriptName(),tLocalData.getScriptCounter());
+
+		//	レイヤ復帰
+		tCanvasBeta.resetLayer();
+		tCanvas.setWipe(WipeFade,,500);
+		tEffect.restart();
+
+		//	メッセージ復帰
+		tMessage.setMode(tLocalData.getScriptMessageMode());
+		tMessage.clearMessage();
+		tMessage.reloadWindowImage();
+
+		script.message=tLocalData.getScriptMessage0();
+		script.nowMessage=tLocalData.getScriptMessage1();
+
+		if(tMessage.mode==tMessage.ModeWindow){
+			script.nowMessage=script.message;
+		}else{
+			//	改ページ "[p]" 以前を削除
+			script.nowMessage=(new RegExp(".*\\[p\\]")).replace(script.nowMessage,"");
+			if(script.nowMessage!=""){
+				script.nowMessage+="\\n";
+			}
+			if(script.nowMessage!==void&&script.nowMessage!=""){
+				tMessage.setMessage(script.nowMessage,tLocalData.getScriptMessageWait());
+				tMessage.flashMessage();
+			}
+			script.nowMessage+=script.message;
+			script.message+="\\n";
+		}
+
+		tMessage.setVisible(script.nowVisibleMessage=tLocalData.getScriptMessageVisible(),false);
+		if(script.nowVisibleMessage&&script.message!=""){
+			if(tMessage.mode==tMessage.ModeNovel&&/\[p\]\\n$/.test(script.message)){
+				script.message=/\[p\]\\n$/.replace(script.message,"");
+				tMessage.setMessage(script.message,false);
+				tMessage.flashMessage();
+				tMessage.setMessage("[p]\\n",tLocalData.getScriptMessageWait());
+			}else{
+				tMessage.setMessage(script.message,tLocalData.getScriptMessageWait());
+				tMessage.flashMessage();
+			}
+		}
+
+		//	tLocalData.data.reserv の復帰
+		tLocalData.data.reserv.assignStruct(reserv);
+
+		//	shake中ならCanvasの裏を黒にする
+		if(tLocalData.getScriptShakeScreen()||tLocalData.getScriptShakeMessage()){
+			tWindow.layer.fillRect(0,0,tWindow.layer.width,tWindow.layer.height,0xff000000);
+		}
+
+		//	sound 復帰
+		tLocalData.restoreScriptBgm();
+		tLocalData.restoreScriptBgv();	//★バックグラウンドボイス
+	}
+
+	//--------------------------------------------------------------
+	//	メッセージを数える
+	//--------------------------------------------------------------
+	function initializeKidoku(){
+		if(script.kidoku!==void){
+			invalidate script.kidoku;
+		}
+		script.kidoku=new Dictionary();
+
+		if(script.compatibility){
+			var re=new RegExp("^[\t ]*[*+]");
+			var count=0;
+			for(var i=0;i<script.lines.count;i++){
+				if(re.test(script.lines[i])){
+					script.kidoku[i]=count++;
+				}
+			}
+		}else{
+			var re=new RegExp("^[\t]*[^;#\t]+");
+			var count=0;
+			for(var i=0;i<script.lines.count;i++){
+				if(re.test(script.lines[i])){
+					script.kidoku[i]=count++;
+				}
+			}
+		}
+	}
+
+	function initializeSelect(){
+		if(script.select!==void){
+			invalidate script.select;
+		}
+		script.select=new Dictionary();
+
+		var re=new RegExp("^[\t]*#(select|fselect)");
+		var count=0;
+		for(var i=0;i<script.lines.count;i++){
+			if(re.test(script.lines[i])){
+				script.select[i]=count++;
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	1行解析
+	//--------------------------------------------------------------
+	function analysis(){
+		var str=script.lines[script.counter].trim();
+		var index=0;
+		var c=0;
+		var result;
+
+		if(str.length==0){
+			++script.counter;
+			return ScNone;
+		}
+		//	コメントチェック
+		c=str.charAt(0);
+		if(c==';'||c=='.'){
+			++script.counter;
+			return ScComment;
+		}
+
+		//	コマンドチェック
+		if(c=='#'){
+			script.analysis.name=script.name;
+			script.analysis.counter=script.counter;
+			script.analysis.line=str;
+			if(script.command!==void){
+				invalidate script.command;
+			}
+			script.command=str.substring(1).toLowerCase().split(" ",,true);
+			++script.counter;
+			return	SCommand;
+		}
+
+		//	残りはメッセージ
+		var	result=ScMessage;
+		if(script.compatibility){
+			script.message="";
+//			int	lineCountMax=[avg.tMessageWindow getWindowLineCount];
+			var lineCountMax=4;
+			var lineCount=0;
+//			while([avg.tMessageWindow getMode]==ModeNovel||lineCount<lineCountMax){
+//			while(lineCount<lineCountMax){
+			while(script.counter<script.lines.count){
+				str=script.lines[script.counter];
+				//	先頭、末尾のタブを削除(半角スペースは残す)
+				str=/^\t*/.replace(str,"");
+				str=/\t*$/.replace(str,"");
+				if(str.length==0){
+					break;
+				}
+				c=str.charAt(0);
+				if(c=='*'){
+					script.messageEndCode=MessageEndCodeNormal;
+					if(str.length>=2&&str.charAt(1)=='+'){
+						script.messageEndCode=MessageEndCodeContinue;
+					}
+					break;
+				}else if(c=='+'){
+					result=ScMessageNoWait;
+					break;
+//				}else if([avg.tMessageWindow getMode]==ModeWindow&&lineCount==0&&c==0x3010/*'【'*/){
+				}else{
+					if(script.message!=""||c!='【'){
+						//	最初の行の【名前】以外はメッセージウィンドウに表示するので行数を数える
+						++lineCount;
+					}
+					if(script.message!=""){
+						//	最初の行以外は間に改行を挟む
+						script.message+="\\n";
+					}
+					script.message+=str;
+					++script.counter;
+				}
+			}
+			++script.counter;
+			if(script.message==""){
+				return	ScNone;
+			}
+		}else{
+			var array;
+			script.message=script.lines[script.counter++];
+
+			//	【名前】の後に \n を入れる
+			array=(new RegExp("^[\t ]*(【.*?】)(.*)")).exec(script.message);
+			if(array.count){
+				//★face描画フラグ判定のタイミング？
+				//#face onになっているか？　かつ　#face命令で任意の画像が指定されていない
+				if(tLocalData.getScriptFaceFlag()&&tLocalData.getScriptFaceImage()===""){
+
+					//表示中の立ち絵の頭3文字とtSettings.face.image[array[1]]が一致するか？
+					//あったらその立ち絵ファイル名の頭にface用の文字列を付加して、それをface画像として設定する
+
+					var arr = new Array();
+					arr.assign(tLocalData.data.layers);
+					var lp = arr.count\2;
+					for(var i=0;i<lp;i++){
+						arr.erase(i+1);
+					}
+
+					for(var i=0;i<arr.count;i++){
+						if(tLocalData.data.layers['cg'+i]!==void){
+							var tati = tLocalData.data.layers['cg'+i].filename;
+							if(tSettings.face.chara[array[1]]==tati.substr(0,3)){
+								//ここでファイル名確定
+								tLocalData.setScriptFace(tSettings.face.prefix+tati.substr(0,4)+"0"+tati.substr(5));
+							}
+						}
+					}
+				}
+				script.message=array[1]+"\\n"+array[2];
+			}else if(tLocalData.getScriptFaceFlag()&&tLocalData.getScriptFaceImage()===""){
+				tLocalData.setScriptFace("");
+			}
+
+			//	辞書を利用
+			var temp=[];
+			temp.assign(tLocalData.data.script.dictionary);
+			for(var i=0;i<temp.count;i+=2){
+				//dm(temp[i]);
+				script.message=(new RegExp("\\$"+temp[i],"g")).replace(script.message,temp[i+1]);
+			}
+
+			//	ScMessageNoWait チェック
+			array=(new RegExp("(.*)\\[nw\\]$")).exec(script.message);
+			if(array.count){
+				script.message=array[1];
+				result=ScMessageNoWait;
+			}
+		}
+		return	result;
+	}
+
+	//--------------------------------------------------------------
+	//	tick
+	//--------------------------------------------------------------
+	function tick(){
+
+		//	終了処理が開始されたらスクリプトを実行しない
+		if(script.finish){
+			finish();
+			return;
+		}
+
+		//	Movie
+		if(tMovie.isBusy()){
+			return;
+		}
+
+		//BGV再生中にボイスを再生した際、ボイスの再生状況を監視する（差し込み位置は要検討
+		if(bgvoiceCollision==5 && !tSound.isPlayVoice()){
+			bgvoiceCollision=1;
+			//tSound.replayBgVoice();
+			var nowBgVoice=tSound.track['bgvoice'].file;
+			var nowBgVoiceVolume=tSound.track['bgvoice'].volume;	//合理的ではない処理
+			tSound.play('bgvoice',nowBgVoice.substr(0,nowBgVoice.indexOf('.')),100);
+			tSound.track['bgvoice'].volume=nowBgVoiceVolume;
+		}
+		if(bgvoiceCollision!=5 && bgvoiceCollision>0 && !tSound.isPlayBgVoice()){
+			bgvoiceCollision=0;
+		}
+
+		//	Wait Key
+		if(waitKey){
+			if(!tGameSystem.isSkip()){
+				return;
+			}else{
+				waitKey=false;
+			}
+		}
+
+		//	Wait Time
+		if(waitTime>System.getTickCount()){
+			if(!tGameSystem.isSkip()){
+				return;
+			}else{
+				waitTime=0;
+			}
+		}
+
+		//	Wait System
+		if(waitSystem){
+			if(tGameSystem.isBusy()&&!tGameSystem.isSkip()){
+				return;
+			}else{
+				waitSystem=false;
+			}
+		}
+
+		//	Wait Effect Fade
+		if(waitEffectFade){
+			if(tEffect.fadeFlag){
+				if(!tGameSystem.isSkip()){
+					return;
+				}else{
+					if(tEffect.fadeFlag>0){
+						tEffect.show();
+					}else{
+						tEffect.hide();
+					}
+					waitEffectFade=false;
+				}
+			}else{
+				waitEffectFade=false;
+			}
+		}
+
+		//	Wait Camera
+		if(waitCamera){
+			if(tCanvasBeta.camera.move.flag||tCanvasBeta.camera.zoom.flag){
+				if(!tGameSystem.isSkip()){
+					return;
+				}else{
+					tCanvasBeta.skipCamera();
+				}
+			}
+			waitCamera=false;
+		}
+
+		//	Wait List
+		for(var i=waitListAnime.count-1;i>=0;i--){
+			if(!tGameSystem.isSkip()){
+				if(tCanvasBeta.isAnime(waitListAnime[i][0],waitListAnime[i][1])){
+					return;
+				}
+			}
+			waitListAnime.erase(i);
+		}
+		for(var i=waitListSound.count-1;i>=0;i--){
+			if(!tGameSystem.isSkip()){
+				if(waitListSound[i]=="seall"){
+					if(tSound.isPlaySE()){
+						return;
+					}
+				}else if(waitListSound[i]=="voice"){
+					if(tSound.isPlayVoice()){
+						return;
+					}
+				}else if(waitListSound[i]=="bgvoice"){
+					if(tSound.isPlayBgVoice()){
+						return;
+					}
+				}else{
+					//dm("wait "+waitListSound[i]+" "+tSound.isPlay(waitListSound[i]));
+					if(tSound.isPlay(waitListSound[i])){
+						return;
+					}
+				}
+			}
+			waitListSound.erase(i);
+		}
+
+		//	Wait Message
+		if(tMessage.isFade()||tMessage.isBusy()){
+			return;
+		}
+
+		//	Wait Select
+		if(tSelect.isBusy()){
+			return;
+		}
+
+		//	Wait Map
+		if(tMap.isBusy()){
+			return;
+		}
+
+		//	MessageWindowHide
+		if(tWindow.hide){
+			return;
+		}
+
+		//	設定されているvoiceファイルをクリア
+		//	ここを通過してる＝音声設定後のメッセージを送った
+		//tLocalData.setScriptVoiceName(void);	//★2013.05.08現在、このボイスファイル名はログにしか記録してないので、ログへ情報を送った直後に初期化を入れるよう変更
+
+		while(script.lines.count>script.counter){
+			//dm(script.lines[script.counter]);
+			var	scriptCounterSave=script.counter;							//	現在の位置を保存
+			var	result=analysis();
+			if(result==SCommand){
+				//	コマンド処理
+				var command=script.command.shift();
+
+				//	先頭にレイヤ名を書いたときの処理
+				if(assignLayer[command]!==void){
+					if("move"==script.command[0]||"alpha"==script.command[0]||"anime"==script.command[0]){
+						var temp=script.command[0];
+						script.command[0]=command;
+						command=temp;
+					}else{
+						script.command.unshift(command);
+						command="cg";
+					}
+				}
+
+				//	BG(bgcは互換用)
+				//		#bg filename [x y]
+				if("bg"==command||"bgc"==command){
+					tCanvasBeta.addReservSet("bg",script.command[0],expression(script.command[1]),expression(script.command[2]));
+					//	アルバム登録
+					tGlobalData.setAlbum(tExCG.getImageIndex(script.command[0]));
+				}else
+
+				if("bgpos"==command){
+					tCanvasBeta.addReservAdd("bg",expression(script.command[0]),expression(script.command[1]));
+				}else
+
+				if("bgposadd"==command){
+					tCanvasBeta.addReservAddPos("bg",expression(script.command[0]),expression(script.command[1]));
+				}else
+
+				//	CG
+				//		#cg 0 filename x y [order]
+				//		#cg 名前 filename x y [order] or  #名前 filename x y [order]
+				//		#cg 0 clear
+				//		#cg 名前 clear                or  #名前 clear
+				//		#cg all clear
+				if("cg"==command){
+					if("clear"==script.command[1]){
+						tCanvasBeta.addReservClear(makeLayerName(script.command[0]));
+					}else{
+						var x,y,order;
+						var layer=makeLayerName(script.command[0]);
+						if(assignPos[script.command[2]]!==void){
+							x=assignPos[script.command[2]].x;
+							y=assignPos[script.command[2]].y;
+							order=expression(script.command[3]);
+						}else{
+							x=expression(script.command[2]);
+							y=expression(script.command[3]);
+							order=expression(script.command[4]);
+						}
+						tCanvasBeta.addReservSet(layer,script.command[1],x,y);
+						if(order!==void){
+							tCanvasBeta.addReservOrder(layer,order);
+						}
+						tCanvasBeta.setBlur(layer,false);
+
+						//	アルバム登録
+						tGlobalData.setAlbum(tExCG.getImageIndex(script.command[1]));
+					}
+				}else
+
+				if("cgpos"==command){
+					var x,y;
+					if(assignPos[script.command[1]]!==void){
+						x=assignPos[script.command[1]].x;
+						y=assignPos[script.command[1]].y;
+					}else{
+						x=expression(script.command[1]);
+						y=expression(script.command[2]);
+					}
+					tCanvasBeta.addReservPos(makeLayerName(script.command[0]),x,y);
+				}else
+
+				if("cgposadd"==command){
+					var x,y;
+					if(assignPos[script.command[1]]!==void){
+						x=assignPos[script.command[1]].x;
+						y=assignPos[script.command[1]].y;
+					}else{
+						x=expression(script.command[1]);
+						y=expression(script.command[2]);
+					}
+					tCanvasBeta.addReservAddPos(makeLayerName(script.command[0]),x,y);
+				}else
+
+				//	Clear CG
+				//		#clearcg 0
+				//		#clearcg all
+				if("clearcg"==command){
+					tCanvasBeta.addReservClear(makeLayerName(script.command[0]));
+				}else
+
+				//	Move
+				//		#move bg x y [time]
+				//		#move cg 0 x y [time]
+				//		#move 名前 x y [time]  or  #名前 move x y [time]
+				//		#move bg wait
+				//		#move 名前 wait        or  #名前 move wait
+				//		#move all wait
+				if("move"==command){
+					var layer=makeLayerName();
+					if("wait"==script.command[0]){
+						if(!isNext()){
+							waitListAnime.add([layer,command]);
+							return;
+						}
+					}else if("blur"==script.command[0]){
+						if("on"==script.command[1]){
+							tCanvasBeta.setBlur(layer,true);
+						}else if("off"==script.command[1]){
+							tCanvasBeta.setBlur(layer,false);
+						}
+					}else{
+						var x,y,time;
+						if(assignPos[script.command[0]]!==void){
+							x=assignPos[script.command[0]].x;
+							y=assignPos[script.command[0]].y;
+							time=script.command[1];
+						}else{
+							x=expression(script.command[0]);
+							y=expression(script.command[1]);
+							time=script.command[2];
+						}
+						tCanvasBeta.setMove(layer,x,y,time===void?1000:expression(time));
+					}
+				}else
+
+				//	Alpha
+				//		#alpha bg value [time]
+				//		#alpha cg 0 value [time]
+				//		#alpha 名前 value [time]  or  #名前 alpha value [time]
+				//		#alpha cg 0 wait
+				//		#alpha 名前 wait          or  #名前 alpha wait
+				//		#alpha all wait
+				if("alpha"==command){
+					var layer=makeLayerName();
+					if("wait"==script.command[0]){
+						if(!isNext()){
+							waitListAnime.add([layer,command]);
+							return;
+						}
+					}else{
+						tCanvasBeta.setAlpha(layer,expression(script.command[0]),expression(script.command[1]));
+					}
+				}else
+
+				//	SetAlpha
+				//		#setalpha bg value
+				//		#setalpha cg 0 value
+				//		#setalpha 名前 value  or  #名前 setalpha value
+				//		#setalpha cg 0 wait
+				if("setalpha"==command){
+					var layer=makeLayerName();
+					tCanvasBeta.addReservAlpha(layer,expression(script.command[0]));
+				}else
+
+				//	Zoom
+				//		#zoom bg size [time] [type]
+				//		#zoom cg 0 size [time] [type]
+				//		#zoom 名前 size [time] [type] or  #名前 zoom size [time] [type]
+				//		#zoom cg 0 wait
+				//		#zoom 名前 wait               or  #名前 zoom wait
+				//		#zoom all wait
+				//			type:
+				//				0: 最近傍点法が用いられます
+				//				1: 低精度の線形補間が用いられます(一部実装)
+				//				2: 線形補間が用いられます(一部実装)
+				//				3: ３次元補間が用いられます(一部実装)
+				if("zoom"==command){
+					var layer=makeLayerName();
+					if("wait"==script.command[0]){
+						if(!isNext()){
+							waitListAnime.add([layer,command]);
+							return;
+						}
+					}else{
+						tCanvasBeta.setZoom(layer,expression(script.command[0]),expression(script.command[1]),expression(script.command[2]));
+					}
+				}else
+
+				//	Anime
+				//		#anime 0 wait
+				//		#anime 名前 wait  or  #名前 anime wait
+				if("anime"==command){
+					if(!isNext()){
+						var layer=makeLayerName();
+						if("wait"==script.command[0]){
+							waitListAnime.add([layer,command]);
+							return;
+						}
+					}
+				}else
+
+				//	SetAnime
+				//		#startanime layer pattern
+				//		#stopanime layer
+				if("startanime"==command){
+					tCanvasBeta.setAnime(makeLayerName(script.command[0]),script.command[1]);
+					return;
+				}else
+
+				if("stopanime"==command){
+					tCanvasBeta.stopAnime(makeLayerName(script.command[0]));
+					return;
+				}else
+
+				//★filter
+				if("filter"==command){
+					tCanvasBeta.setFilter(script.command[0]);
+					return;
+				}else
+
+				//	pryority
+				if("cgpriority"==command){
+					tCanvasBeta.addReservPriority(script.command[0]);
+				}else
+				if("order"==command){
+					tCanvasBeta.addReservOrder(makeLayerName(script.command[0]),expression(script.command[1]));
+				}else
+
+				//	Wipe
+				//		#wipe pattern [time]
+				if("wipe"==command){
+					var mode=wipeTable[script.command[0]];
+					if(mode==WipeMask){
+						tCanvas.setWipe(mode,script.command[1],expression(script.command[2]));
+					}else{
+						tCanvas.setWipe(mode,,expression(script.command[1]));
+					}
+					tLocalData.setScriptCounter(script.counter);
+					if(!isNext()){
+						return;
+					}
+				}else
+
+				//	shake
+				//		#shake "all" virtical horizontal interval
+				//		#shake "screen" virtical horizontal interval
+				//		#shake "message" virtical horizontal interval
+				//		#shake layer virtical horizontal interval
+				//		#shake all "stop"
+				//		#shake screen "stop"
+				//		#shake message "stop"
+				//		#shake layer "stop"
+				if("shake"==command){
+					if("end"==script.command[1]||"stop"==script.command[1]){
+						if("all"==script.command[0]){
+							tCanvas.stopShakeScreen();
+							tCanvas.stopShakeMessage();
+							tCanvas.stopShakeCG("all");
+						}else if("screen"==script.command[0]){
+							tCanvas.stopShakeScreen();
+							tCanvas.stopShakeCG("all");
+						}else if("message"==script.command[0]){
+							tCanvas.stopShakeMessage();
+						}else {
+							var layer=makeLayerName(script.command[0]);
+							tCanvas.stopShakeCG(layer);
+						}
+						if(!isNext()){
+							return;
+						}
+					}else{
+						var screen=false;
+						var message=false;
+						var layer;
+//						var virtical=expression(script.command[1])?true:false;
+						var virtical=int(script.command[2]);
+//						var horizontal=expression(script.command[2])?true:false;
+						var horizontal=int(script.command[1]);
+						var interval=expression(script.command[3]);
+						if("all"==script.command[0]){
+							screen=true;
+							message=true;
+						}else if("screen"==script.command[0]){
+							screen=true;
+						}else if("message"==script.command[0]){
+							message=true;
+						}else{
+							layer=makeLayerName(script.command[0]);
+						}
+//						tCanvas.setShake(screen,message,virtical,horizontal,interval);
+						tCanvas.setShake(screen,message,virtical,horizontal,interval,layer);
+						if(!isNext()){
+							return;
+						}
+					}
+				}else
+
+				//	Wait
+				//		#wait key														キー待ち
+				//		#wait time
+				//		#wait move cg 0   or  #wait move 名前   or #wait move all       move終了待ち(allで全レイヤを待つ)
+				//		#wait alpha cg 0  or  #wait alpha 名前  or #wait alpha all      alpha終了待ち(allで全レイヤを待つ)
+				//		#wait anime cg 0  or  #wait anime 名前  or #wait anime all      moveとalpha終了待ち(allで全レイヤを待つ)
+				if("wait"==command){
+					if(!isNext()){
+						var param=script.command.shift();
+						if("key"==param){
+							waitKey=true;
+							return;
+						}else if("move"==param||"alpha"==param||"anime"==param){
+							var layer=makeLayerName();
+							waitListAnime.add([layer,param]);
+							return;
+						}else{
+							waitTime=System.getTickCount()+expression(param);
+							return;
+						}
+					}
+				}else
+				if("keywait"==command){
+					if(!isNext()){
+						waitKey=true;
+						return;
+					}
+				}else
+
+				//	BGM
+				if("bgm"==command){
+					if("stop"==script.command[0]&&script.compatibility){
+						if(!isNext()){
+							tSound.stopBGM();
+						}
+						tLocalData.clearScriptBgm("all");
+					}else if("stop"==script.command[1]){
+						var time=script.command[2]===void?0:+script.command[2];
+						if("all"==script.command[0]){
+							if(!isNext()){
+								tSound.stopBGM(time);
+							}
+							tLocalData.clearScriptBgm("all");
+						}else{
+							if(!isNext()){
+								var trackname=TrackBGM.sprintf(+script.command[0]);
+								tSound.stop(trackname,time);
+							}
+							tLocalData.clearScriptBgm(+script.command[0]);
+						}
+					}else if("pause"==script.command[1]){
+						var time=script.command[2]===void?0:+script.command[2];
+						if("all"==script.command[0]){
+							if(!isNext()){
+								tSound.pauseBGM();
+							}
+							tLocalData.setScriptBgmPause("all",true);
+						}else{
+							if(!isNext()){
+								var trackname=TrackBGM.sprintf(+script.command[0]);
+								tSound.pause(trackname);
+							}
+							tLocalData.setScriptBgmPause(+script.command[0],true);
+						}
+					}else if("replay"==script.command[1]){
+						var time=script.command[2]===void?0:+script.command[2];
+						if("all"==script.command[0]){
+							if(!isNext()){
+								tSound.replayBGM();
+							}
+							tLocalData.setScriptBgmPause("all",false);
+						}else{
+							if(!isNext()){
+								var tracknum=+script.command[0];
+								var trackname=TrackBGM.sprintf(tracknum);
+								if(tSound.track[trackname].paused==tLocalData.data.script.bgm[tracknum].pause){
+									tSound.replay(trackname);
+								}else{
+									tSound.play(trackname,tLocalData.data.script.bgm[tracknum].name,tLocalData.data.script.bgm[tracknum].volume,tLocalData.data.script.bgm[tracknum].count);
+								}
+							}
+							tLocalData.setScriptBgmPause(+script.command[0],false);
+						}
+					}else if("fade"==script.command[1]){
+						var volume=+script.command[2];
+						var time=script.command[3]===void?0:+script.command[3];
+						var delay=script.command[4]===void?0:+script.command[4];
+						if("all"==script.command[0]){
+							if(!isNext()){
+								tSound.fadeBGM(volume,time,delay);
+							}
+							tLocalData.setScriptBgmVolume("all",volume);
+						}else{
+							if(!isNext()){
+								var trackname=TrackBGM.sprintf(+script.command[0]);
+								tSound.fade(trackname,volume,time,delay);
+							}
+							tLocalData.setScriptBgmVolume(+script.command[0],volume);
+						}
+					}else{
+						var trackname,trackid,filename,volume=100,loop=0,intime=0,outtime=0;
+						//	アルバム登録
+						tGlobalData.setBgm(int(script.command[1]));
+						if(script.compatibility){
+							trackname=TrackBGM.sprintf(trackid=0);
+							filename=FileBGM.sprintf(+script.command[0]);
+							if(script.command[1]!==void){loop=+script.command[1];}
+						}else{
+							trackname=TrackBGM.sprintf(trackid=+script.command[0]);
+							if(/^[0-9]+$/.test(script.command[1])){
+								filename=FileBGM.sprintf(+script.command[1]);
+							}else{
+								filename=script.command[1];
+							}
+							if(script.command[2]!==void){volume=+script.command[2];}
+							if(script.command[3]!==void){loop=+script.command[3];}
+							if(script.command[4]!==void){intime=+script.command[4];}
+							if(script.command[5]!==void){outtime=+script.command[5];}
+						}
+						try{
+							if(!isNext()){
+								tSound.play(trackname,filename,volume,loop,intime,outtime);
+							}
+							tLocalData.setScriptBgmName(trackid,filename);
+							tLocalData.setScriptBgmCount(trackid,loop);
+							tLocalData.setScriptBgmVolume(trackid,volume);
+							tLocalData.setScriptBgmPause(trackid,false);
+						}catch(e){
+							if(!isDebug()){
+								System.inform("file open error in "+script.name+":"+(script.counter)+"\n"+script.lines[script.counter-1],"script error");
+							}
+						}
+					}
+				}else
+
+				//	SE
+				if("se"==command){
+					if(!isNext()){
+						if(script.compatibility){
+							script.command.insert(0,"0");
+						}
+						if("stop"==script.command[1]){
+							var time=script.command[2]===void?0:+script.command[2];
+							if("all"==script.command[0]){
+								tSound.stopSE(time);
+							}else{
+								var trackname=TrackSE.sprintf(+script.command[0]);
+								tSound.stop(trackname,time);
+							}
+						}else if("pause"==script.command[1]){
+							var time=script.command[2]===void?0:+script.command[2];
+							if("all"==script.command[0]){
+								tSound.pauseSE();
+							}else{
+								var trackname=TrackSE.sprintf(+script.command[0]);
+								tSound.pause(trackname);
+							}
+						}else if("replay"==script.command[1]){
+							var time=script.command[2]===void?0:+script.command[2];
+							if("all"==script.command[0]){
+								tSound.replaySE();
+							}else{
+								var trackname=TrackSE.sprintf(+script.command[0]);
+								tSound.replay(trackname);
+							}
+						}else if("fade"==script.command[1]){
+							var volume=+script.command[2];
+							var time=script.command[3]===void?1000:+script.command[3];
+							var delay=script.command[4]===void?0:+script.command[4];
+							if("all"==script.command[0]){
+								tSound.fadeSE(volume,time,delay);
+							}else{
+								var trackname=TrackSE.sprintf(+script.command[0]);
+								tSound.fade(trackname,volume,time,delay);
+							}
+						}else if("wait"==script.command[1]){
+							if("all"==script.command[0]){
+								waitListSound.add("seall");
+							}else{
+								var trackname=TrackSE.sprintf(+script.command[0]);
+								waitListSound.add(trackname);
+							}
+							return;
+						}else{
+							var trackname,filename,volume=100,loop=1,intime=0,outtime=0;
+							if(script.compatibility){
+								trackname=TrackSE.sprintf(+script.command[0]);
+								filename=script.command[1];
+								if(script.command[2]!==void){loop=+script.command[2];}
+							}else{
+								trackname=TrackSE.sprintf(+script.command[0]);
+								filename=script.command[1];
+								if(script.command[2]!==void){volume=+script.command[2];}
+								if(script.command[3]!==void){loop=+script.command[3];}
+								if(script.command[4]!==void){intime=+script.command[4];}
+								if(script.command[5]!==void){outtime=+script.command[5];}
+							}
+							try{
+								tSound.play(trackname,filename,volume,loop,intime,outtime);
+							}catch(e){
+								if(!isDebug()){
+									System.inform("file open error in "+script.name+":"+(script.counter)+"\n"+script.lines[script.counter-1],"script error");
+								}
+							}
+						}
+					}
+				}else
+
+				//	Voice
+				if("voice"==command){
+//					if(!isNext()){
+						if(!isNext()&&"stop"==script.command[0]){
+								var time=script.command[1]===void?0:+script.command[1];
+								tSound.stopVoice(time);
+						}else if(!isNext()&&"pause"==script.command[0]){
+								var time=script.command[1]===void?0:+script.command[1];
+								tSound.pauseVoice();
+						}else if(!isNext()&&"replay"==script.command[0]){
+							var time=script.command[1]===void?0:+script.command[1];
+							tSound.replayVoice();
+						}else if(!isNext()&&"wait"==script.command[0]){
+							waitListSound.add("voice");
+							return;
+						}else{
+							var trackname="voice",filename,volume=100,loop=1,intime=0,outtime=0;
+							filename=script.command[0];
+							if(script.command[1]!==void){volume=+script.command[1];}
+							try{
+								if(!isNext()){
+									tSound.play(trackname,filename,volume,loop,intime,outtime);
+								}
+								tLocalData.setScriptVoiceName(filename);
+							}catch(e){
+								if(!isDebug()){
+									System.inform("file open error in "+script.name+":"+(script.counter)+"\n"+script.lines[script.counter-1],"script error");
+								}
+							}
+						}
+//					}
+				}else
+
+				//	BGVoice
+				if("bgvoice"==command){
+					if("stop"==script.command[0]){
+						if(!isNext()){
+							var time=script.command[1]===void?0:+script.command[1];
+							tSound.stopBgVoice(time,true);
+						}
+						tLocalData.clearScriptBgv();
+					}else if("pause"==script.command[0]){
+						if(!isNext()){
+							var time=script.command[1]===void?0:+script.command[1];
+							tSound.pauseBgVoice();
+						}
+						tLocalData.setScriptBgvPause(true);
+					}else if("replay"==script.command[0]){
+						if(!isNext()){
+							var time=script.command[1]===void?0:+script.command[1];
+							tSound.replayBgVoice();
+						}
+						tLocalData.setScriptBgvPause(false);
+					}else if("wait"==script.command[0]){
+						if(!isNext()){
+							waitListSound.add("bgvoice");
+						}
+						return;
+					}else{
+						var trackname="bgvoice",filename,volume=100,loop=0,intime=0,outtime=0;
+						filename=script.command[0];
+						if(script.command[1]!==void){volume=+script.command[1];}
+						if(script.command[2]!==void){loop=+script.command[2];}
+						try{
+							if(!isNext()){
+								tSound.play(trackname,filename,volume,loop,intime,outtime);
+							}
+							tLocalData.setScriptBgvName(filename);
+							tLocalData.setScriptBgvCount(loop);
+							tLocalData.setScriptBgvVolume(volume);
+							tLocalData.setScriptBgvPause(false);
+						}catch(e){
+							if(!isDebug()){
+								System.inform("file open error in "+script.name+":"+(script.counter)+"\n"+script.lines[script.counter-1],"script error");
+							}
+						}
+					}
+				}else
+
+				//	制御文
+				if("if"==command){
+					script.counter=analysisIf(script.command[0],script.command[1],script.counter);
+				}else
+
+				if("else"==command||"elsif"==command||"elseif"==command){
+					script.counter=gotoEndif(script.counter);
+				}else
+
+				if("endif"==command){
+				}else
+
+				if("goto"==command){
+					script.counter=gotoLabelorFile(script.command[0]);
+				}else
+
+				if("next"==command){
+					tLocalData.setScriptCounter(scriptCounterSave);
+					tLocalData.autoSave();
+					nextScript(script.command[0]);
+					//return;
+				}else
+
+				if("next2"==command){
+					//	autoセーブをしない
+					tLocalData.setScriptCounter(scriptCounterSave);
+					nextScript(script.command[0]);
+					//return;
+				}else
+
+				if("call"==command){
+					tLocalData.setScriptCounter(scriptCounterSave);
+					tLocalData.autoSave();
+					callScript(script.command[0]);
+					//return;
+				}else
+
+				if("call2"==command){
+					//	autoセーブをしない
+					tLocalData.setScriptCounter(scriptCounterSave);
+					callScript(script.command[0]);
+					//return;
+				}else
+
+				if("return"==command){
+					tLocalData.setScriptCounter(scriptCounterSave);
+					tLocalData.autoSave();
+					if(returnScript()){
+						return;
+					}
+				}else
+
+				if("return2"==command){
+					//	autoセーブをしない
+					tLocalData.setScriptCounter(scriptCounterSave);
+					if(returnScript()){
+						return;
+					}
+				}else
+
+				if("title"==command){
+					tTitle.start();
+					script.next=false;
+					initialize();
+					return;
+				}else
+
+				//★追加（強制クリック命令）
+				if("skip"==command){
+					if("off"==script.command[0]){
+						reSkip=false;
+						tGameSystem.setSkip(false);
+					}else if("on"==script.command[0]){
+						reSkip=true;
+						tGameSystem.setSkip(true);
+					}
+					return;
+				}else
+
+				//	選択肢
+				if("select"==command){
+					if("cursor"==script.command[0]){
+						tLocalData.setScriptSelectCursor(expression(script.command[1]),script.command[2]);
+					}else{
+						endNext();
+						if(tGlobalData.data.environment.skipoff){tGameSystem.setSkip(false);}
+						if(tGlobalData.data.environment.autooff){tGameSystem.setAuto(false);}
+						tLocalData.setScriptCounter(scriptCounterSave);
+						tLocalData.autoSave();
+						var sflag=tGlobalData.getSelect(script.name,script.select[script.analysis.counter]);
+						if(setSelectMenu(script.command.count,sflag,0xffffffff,0xffffffff)){
+							tSelect.makeSelect();
+							return;
+						}
+					}
+				}else
+
+				if("fselect"==command){
+					endNext();
+					if(tGlobalData.data.environment.skipoff){tGameSystem.setSkip(false);}
+					if(tGlobalData.data.environment.autooff){tGameSystem.setAuto(false);}
+					tLocalData.setScriptCounter(scriptCounterSave);
+					tLocalData.autoSave();
+					var sflag=tGlobalData.getSelect(script.name,script.select[script.analysis.counter]);
+					var visibleFlag=script.command.shift();
+					var enableFlag=script.command.shift();
+					if(setSelectMenu(script.command.count,sflag,expression(visibleFlag),expression(enableFlag))){
+						tSelect.makeSelect();
+						return;
+					}
+				}else
+
+				if("yesno"==command){
+					var result=askYesNo(script.command[0]);
+					expression("f0="+result);
+				}else
+
+				//	map
+				if("map"==command){
+					endNext();
+					command=script.command.shift();
+					if("clean"==command){
+						script.next=false;
+						tLocalData.setScriptCounter(scriptCounterSave);
+						tMap.initialize();
+						if(tGlobalData.data.environment.skipoff){tGameSystem.setSkip(false);}
+						if(tGlobalData.data.environment.autooff){tGameSystem.setAuto(false);}
+						return;
+					}else if("bg"==command){
+						tMap.setBG(script.command[0]);
+					}else if("endbg"==command){
+						tMap.setEndBG(script.command[0]);
+					}else if("set"==command){
+						//                          ↓(visible)真ならデータセット、偽なら何もしない
+						// #map set id filename x y visible mapend caption
+						if(expression(script.command[4])){
+							tMap.setItem(expression(script.command[0]),script.command[1],expression(script.command[2]),expression(script.command[3]),script.command[5],script.command[6]);
+						}
+				//システム機能割り当てボタン
+					}else if("save"==command){
+						if(expression(script.command[4])){
+							tMap.setItem(expression(script.command[0]),script.command[1],expression(script.command[2]),expression(script.command[3]),script.command[5],script.command[6],"save");
+						}
+					}else if("qsave"==command){
+						if(expression(script.command[4])){
+							tMap.setItem(expression(script.command[0]),script.command[1],expression(script.command[2]),expression(script.command[3]),script.command[5],script.command[6],"qsave");
+						}
+					}else if("load"==command){
+						if(expression(script.command[4])){
+							tMap.setItem(expression(script.command[0]),script.command[1],expression(script.command[2]),expression(script.command[3]),script.command[5],script.command[6],"load");
+						}
+					}else if("qload"==command){
+						if(expression(script.command[4])){
+							tMap.setItem(expression(script.command[0]),script.command[1],expression(script.command[2]),expression(script.command[3]),script.command[5],script.command[6],"qload");
+						}
+					}else if("system"==command){
+						if(expression(script.command[4])){
+							tMap.setItem(expression(script.command[0]),script.command[1],expression(script.command[2]),expression(script.command[3]),script.command[5],script.command[6],"system");
+						}
+					}else if("image"==command){
+						//	フォーカス時に表示する画像
+						//	#map image id filename x y visible
+						if(expression(script.command[4])){
+							tMap.setImage(expression(script.command[0]),script.command[1],expression(script.command[2]),expression(script.command[3]));
+						}
+					}else if("sound"==command){
+						//	ボタンSE
+						//	#map sound id overSE downSE
+						tMap.setSound(expression(script.command[0]),script.command[1],script.command[2]);
+					}else if("cursor"==command){
+						//	フォーカス時に表示するカーソル
+						//	#map cursor id cursor
+						tMap.setCursor(expression(script.command[0]),script.command[1]);
+					}else if("window"==command){
+						if(script.compatibility){
+							//	#map window x y color
+							tMap.setWindowCompatibility(expression(script.command[0]),expression(script.command[1]),expression(script.command[2]));
+						}else{
+							//	#map window x y width
+							tMap.setWindow(expression(script.command[0]),expression(script.command[1]),expression(script.command[2]));
+						}
+					}else if("startwipe"==command){
+						var mode=wipeTable[script.command[0]];
+						if(mode==WipeMask){
+							tMap.setStartWipe(mode,script.command[1],expression(script.command[2]));
+						}else{
+							tMap.setStartWipe(mode,,expression(script.command[1]));
+						}
+					}else if("endwipe"==command){
+						var mode=wipeTable[script.command[0]];
+						if(mode==WipeMask){
+							tMap.setEndWipe(mode,script.command[1],expression(script.command[2]));
+						}else{
+							tMap.setEndWipe(mode,,expression(script.command[1]));
+						}
+					}else if("start"==command){
+						tMessage.setVisible(false,false);
+						tMap.start();
+						return;
+					}else if("restart"==command){
+						tMap.restart();
+						return;
+					}
+				}else
+
+				//	ボタン
+				if("button"==command){
+					command=script.command.shift();
+					if("set"==command){
+						//	#button set id image x y hitthreshold label
+						setButton(expression(script.command[0]),script.command[1],expression(script.command[2]),expression(script.command[3]),expression(script.command[4])?16:0,script.command[5]);
+					}else if("cursor"==command){
+						//	フォーカス時に表示するカーソル
+						//	#button cursor id cursor
+						setButtonCursor(expression(script.command[0]),script.command[1]);
+					}else if("image"==command){
+						//	フォーカス時に表示する画像
+						//	#button image id filename x y
+						setButtonImage(expression(script.command[0]),script.command[1],expression(script.command[2]),expression(script.command[3]));
+					}else if("sound"==command){
+						//	決定時に鳴らすSE
+						//	#button sound id overSE downSE
+						setButtonSound(expression(script.command[0]),script.command[1],script.command[2]);
+					}else if("clear"==command){
+						//	ボタン消去
+						//	#button clear id
+						clearButton(expression(script.command[0]));
+					}else{
+					}
+				}else
+
+				//	フラグ関係
+				if("exp"==command){
+					expression(script.command[0]);
+					//dm(tGlobalData.data.flags.global);
+					//dm(tGlobalData.data.flags.album);
+					//dm(tGlobalData.data.flags.scene);
+					//dm(tLocalData.data.flags.local);
+				}else
+
+				if("set"==command){
+					expression(script.command[0]+"="+script.command[1]);
+				}else
+
+				if("add"==command){
+					expression(script.command[0]+"+="+script.command[1]);
+				}else
+
+				if("sub"==command){
+					expression(script.command[0]+"-="+script.command[1]);
+				}else
+
+				if("mul"==command){
+					expression(script.command[0]+"*="+script.command[1]);
+				}else
+
+				if("div"==command){
+					expression(script.command[0]+"\="+script.command[1]);
+				}else
+
+				if("and"==command){
+					expression(script.command[0]+"&="+script.command[1]);
+				}else
+
+				if("or"==command){
+					expression(script.command[0]+"|="+script.command[1]);
+				}else
+
+				if("xor"==command){
+					expression(script.command[0]+"^="+script.command[1]);
+				}else
+
+				if("rnd"==command){
+					expression(script.command[0]+"="+((int)(Math.random()*expression(script.command[1]))));
+				}else
+
+				if("clearflag"==command){
+					if("global"==script.command[0]){
+						tGlobalData.clearGlobal();
+					}else if("kidoku"==script.command[0]){
+						tGlobalData.clearKidoku();
+					}else if("album"==script.command[0]){
+						tGlobalData.clearAlbum();
+					}else if("bgm"==script.command[0]){
+						tGlobalData.clearBgm();
+					}else if("select"==script.command[0]){
+						tGlobalData.clearSelect();
+					}else if("scene"==script.command[0]){
+						tGlobalData.clearScene();
+					}else if("local"==script.command[0]){
+						tLocalData.initializeFlags();
+					}
+				}else
+
+				//	回想フラグ設定
+				if("setscene"==command||"setmemory"==command){
+					if(/[0-9]+/.test(script.command[0])){
+						tGlobalData.setScene(script.command[0]);
+					}else{
+						expression(script.command[0]+"=1");
+					}
+				}else
+
+				//	回想終了
+				if("endscene"==command||"endmemory"==command){
+					if(script.scene){
+						startFinish();
+						return;
+					}
+				}else
+
+				//	アルバム登録
+				if("setalbum"==command){
+					tGlobalData.setAlbum(tExCG.getImageIndex(script.command[0]));
+				}else
+
+				//	savetitle
+				if("savetitle"==command){
+					tLocalData.setScriptSaveTitle(script.command[0]);
+				}else
+
+				//	autosave
+				if("autosave"==command){
+					if(script.command.length==0&&script.next==false){
+						tLocalData.setScriptCounter(script.counter);
+						tLocalData.autoSave();
+					}else if("enabled"==script.command[0]){
+						tLocalData.setScriptAutosaveDisabled(false);
+					}else if("disabled"==script.command[0]){
+						tLocalData.setScriptAutosaveDisabled(true);
+					}
+				}else
+
+				//	スキップオフ
+				if("skipoff"==command){
+					tGameSystem.setSkip(false);
+				}else
+
+				//	ワイプをキャンセルさせない
+				if("wipecancel"==command){
+					if("enabled"==script.command[0]){
+						tLocalData.setScriptWipeCancelDisabled(false);
+					}else if("disabled"==script.command[0]){
+						tLocalData.setScriptWipeCancelDisabled(true);
+					}
+				}else
+
+				//ムーブをキャンセルさせない
+				if("movecancel"==command){
+					if("enabled"==script.command[0]){
+						tLocalData.setScriptMoveCancelDisabled(false);
+					}else if("disabled"==script.command[0]){
+						tLocalData.setScriptMoveCancelDisabled(true);
+					}
+				}else
+
+				//ウェイトをキャンセルさせない
+				if("waitcancel"==command){
+					if("enabled"==script.command[0]){
+						tLocalData.setScriptWaitCancelDisabled(false);
+					}else if("disabled"==script.command[0]){
+						tLocalData.setScriptWaitCancelDisabled(true);
+					}
+				}else
+
+				//	ログ enbale disable
+				if("log"==command){
+					switch(script.command[0]){
+						case "enabled":
+							tLocalData.setScriptLogDisabled(false);
+							break;
+						case "disabled":
+							tLocalData.setScriptLogDisabled(true);
+							break;
+						case "off":
+							tLocalData.setScriptLogFunc(false);
+							tGameSystem.buttons['log'].setEnabled(false);
+							tGameSystem.buttons['log'].renew();
+							break;
+						case "on":
+							tLocalData.setScriptLogFunc(true);
+							tGameSystem.buttons['log'].setEnabled(true);
+							tGameSystem.buttons['log'].renew();
+							break;
+					}
+					//return;
+				}else
+
+				//	メッセージウィンドウ
+				if("mes"==command){
+					if("on"==script.command[0]){
+						script.nowVisibleMessage=true;
+						if(!isNext()){
+							tMessage.setVisible(true,"fade"==script.command[1]?true:false);
+							return;
+						}else{
+							tMessage.setVisible(true,false);
+						}
+					}else if("off"==script.command[0]){
+						script.nowVisibleMessage=false;
+						if(!isNext()){
+							tMessage.setVisible(false,"fade"==script.command[1]?true:false);
+							return;
+						}else{
+							tMessage.setVisible(false,false);
+						}
+					}else if("clear"==script.command[0]){
+						script.nowMessage="";
+						if(!isNext()){
+							tMessage.clearMessage();
+							return;
+						}
+					}else if("window"==script.command[0]){
+						if(!isNext()){
+							tMessage.setMode(tMessage.ModeWindow);
+						}
+						script.nowWindowMode=tMessage.ModeWindow;
+					}else if("novel"==script.command[0]){
+						if(!isNext()){
+							tMessage.setMode(tMessage.ModeNovel);
+						}
+						script.nowWindowMode=tMessage.ModeNovel;
+					}else if("image"==script.command[0]){
+						if("reset"==script.command[1]){
+							tMessage.setWindowImage(void,void,void,void,!isNext());
+						}else{
+							tMessage.setWindowImage(script.command[1]=="void"?void:script.command[1],script.command[2]=="void"?void:script.command[2],script.command[3]=="void"?void:script.command[3],script.command[4]=="void"?void:script.command[4],!isNext());
+						}
+						return;
+					}
+				}else
+
+				if("mesmode"==command){
+					if("window"==script.command[0]){
+						if(!isNext()){
+							tMessage.setMode(tMessage.ModeWindow);
+						}
+						script.nowWindowMode=tMessage.ModeWindow;
+					}else if("novel"==script.command[0]){
+						if(!isNext()){
+							tMessage.setMode(tMessage.ModeNovel);
+						}
+						script.nowWindowMode=tMessage.ModeNovel;
+					}
+				}else
+
+				//★face
+				if("face"==command){
+					if("on"==script.command[0]){
+						tLocalData.setScriptFaceFlag(true);
+					}else if("off"==script.command[0]){
+						tLocalData.setScriptFaceFlag(false);
+					}else {
+						if(script.command.count>2){
+							var x,y;
+							x=+script.command[1];
+							y=+script.command[2];
+							tLocalData.setScriptFace(script.command[0],x,y);
+						}else{
+							tLocalData.setScriptFace(script.command[0]);
+						}
+					}
+				}else
+
+				//	movie
+				if("movie"==command){
+					if(!isNext()){
+						if(script.command[0]=="skipon"){
+							tMovie.skipoff=false;
+						}else if(script.command[0]=="skipoff"){
+							tMovie.skipoff=true;
+						}else{
+							if(!tGlobalData.data.environment.movieoff){
+								tMovie.play(script.command[0]);
+							}
+							return;
+						}
+					}
+				}else
+
+				//指定行から実行
+				if("gotoline"==command){
+					jumpToLine(script.command[0]);
+				} else
+
+				//	エフェクト
+				//		#effect "param" filename max pop interval patterncount patterninterval movetype
+				if("effect"==command){
+					command=script.command.shift();
+					if("param"==command){
+						tEffect.setParam(script.command[0],+script.command[1],+script.command[2],+script.command[3],+script.command[4],+script.command[5],+script.command[6]);
+					}else if("start"==command){
+						tEffect.start();
+						return;
+					}else if("stop"==command){
+						tEffect.stop();
+						return;
+					}else if("clear"==command){
+						tEffect.clear();
+						return;
+					}else if("fadein"==command){
+						tEffect.fadeIn();
+						return;
+					}else if("fadeout"==command){
+						tEffect.fadeOut();
+						return;
+					}else if("show"==command){
+						tEffect.show();
+						return;
+					}else if("hide"==command){
+						tEffect.hide();
+						return;
+					}else if("wait"==command){
+						waitEffectFade=true;
+						return;
+					}
+				}else
+
+				//	カメラ
+				if("camera"==command){
+					command=script.command.shift();
+					if("initialize"==command){
+						tCanvasBeta.initializeCamera();
+					}else if("block"==command){
+						//	block 0	default pitch 3.0	order   0~ 49
+						//	block 1	default pitch 2.5	order  50~ 99
+						//	block 2	default pitch 2.0	order 100~149
+						//	block 3	default pitch 1.5	order 150~199
+						//	block 4	default pitch 1.0	order 200~
+						//	#camera 'block' block pitch
+						tCanvasBeta.setCameraBlock(expression(script.command[0]),expression(script.command[1]));
+					}else if("start"==command){
+						tCanvasBeta.startCamera();
+						if(!isNext()){
+							return;
+						}
+					}else if("move"==command){
+						//	#camera 'move' x y [time]
+						tCanvasBeta.moveCamera(expression(script.command[0]),expression(script.command[1]),expression(script.command[2]));
+						if(!isNext()){
+							return;
+						}
+					}else if("zoom"==command){
+						//	#camera 'zoom' size [time] [type]
+						//	type:
+						//		0: 最近傍点法が用いられます
+						//		1: 低精度の線形補間が用いられます(一部実装)
+						//		2: 線形補間が用いられます(一部実装)
+						//		3: ３次元補間が用いられます(一部実装)
+						tCanvasBeta.zoomCamera(expression(script.command[0]),expression(script.command[1]),expression(script.command[2]));
+						if(!isNext()){
+							return;
+						}
+					}else if("wait"==command){
+						if(!isNext()){
+							waitCamera=true;
+							return;
+						}
+					}else if("end"==command){
+						tCanvasBeta.endCamera();
+						if(!isNext()){
+							return;
+						}
+					}else if("blur"==command){
+						if("on"==script.command[0]){
+							tCanvasBeta.blurCamera(true);
+						}else if("off"==script.command[0]){
+							tCanvasBeta.blurCamera(,false);
+						}
+					}
+				}else
+
+				//	被写界深度
+				if("depth"==command){
+					if("off"==script.command[0]){
+						tCanvasBeta.setDepth(void);
+					}else{
+						tCanvasBeta.setDepth(expression(script.command[0]));
+					}
+				}else
+
+				//	目パチ
+				if("eye"==command){
+					//	#eye 'cg' 0 'on'
+					//	#eye 'cg' 0 'off'
+					var layer=makeLayerName();
+					if("on"==script.command[0]){
+						tCanvasBeta.setEye(layer,true);
+					}else if("off"==script.command[0]){
+						tCanvasBeta.setEye(layer,false);
+					}
+				}else
+
+				//	システムパネル
+				if("system"==command){
+					if("on"==script.command[0]){
+						if(!isNext()){
+							tGameSystem.setVisible(true,"fade"==script.command[1]?true:false);
+							return;
+						}else{
+							tGameSystem.setVisible(true,false);
+						}
+					}else if("off"==script.command[0]){
+						if(!isNext()){
+							tGameSystem.setVisible(false,"fade"==script.command[1]?true:false);
+							return;
+						}else{
+							tGameSystem.setVisible(false,false);
+						}
+					}else if("wait"==script.command[0]){
+						if(!isNext()){
+							waitSystem=true;
+							return;
+						}
+					}else if("image"==script.command[0]){
+						if("reset"==script.command[1]){
+							//	#system image reset
+							tGameSystem.resetImage(!isNext());
+							return;
+						}else{
+							//	#system image id filename
+							tGameSystem.setImage(expression(script.command[1]),script.command[2]=="void"?void:script.command[2],!isNext());
+							return;
+						}
+					}
+				}else
+
+				//	文字列入力
+				if("input"==command){
+					//	#input key caption prompt initialstring
+					var key=script.command[0];
+					var str=void;
+					do{
+						str=System.inputString(script.command[1],script.command[2],script.command[3]);
+					}while(str=="");
+					tLocalData.setScriptDictionary(key,str);
+					//dm(tLocalData.data.script.dictionary);
+				}else
+
+				//	無効なコマンド
+				{
+				}
+
+			}else if(result==ScMessage||result==ScMessageNoWait){
+				tLocalData.setScriptCounter(script.counter);
+
+				tLocalData.setScriptMessage0(script.message);
+				tLocalData.setScriptMessage1(script.nowMessage);
+
+				if(tMessage.mode==tMessage.ModeWindow){
+					script.nowMessage=script.message;
+				}else{
+					//	改ページ "[p]" 以前を削除
+					script.nowMessage=(new RegExp(".*\\[p\\]")).replace(script.nowMessage,"");
+					if(script.nowMessage!=""){
+						script.nowMessage+="\\n";
+					}
+					script.nowMessage+=script.message;
+				}
+				if(!isNext()){
+					if(tMessage.mode==tMessage.ModeWindow){
+						tMessage.clearMessage();
+					}else{
+						script.message+="\\n";
+					}
+					tMessage.setMessage(script.message,result==ScMessage);
+					tMessage.setVisible(true,false);
+				}
+				script.nowVisibleMessage=true;
+				tLocalData.setScriptMessage(tMessage.getMessage());
+				if(!tLocalData.getScriptLogDisabled()){
+					tLog.add(script.message,tMessage.mstrings.totalHeight,tLocalData.getScriptVoiceName());
+					tLocalData.setScriptVoiceName(void);
+				}
+				tLocalData.setScriptFace("");	//★face
+				tGameSystem.decSkipCount();
+				var endnx=false;
+				if(!tGlobalData.getKidoku(script.name,script.kidoku[script.counter-1])){
+					//dm("midoku");
+					if(tGameSystem.isSkip()&&!tGlobalData.data.environment.kidokuoff){
+						tGameSystem.setSkip(false);
+					}
+					if(isNext()&&!tGlobalData.data.environment.kidokuoff){
+						endNext();
+						endnx=true;
+					}
+					tGlobalData.setKidoku(script.name,script.kidoku[script.counter-1]);	//	既読フラグ設定
+				}
+				if(endnx){
+					tMessage.phase=tMessage.PKeyWait;
+					tMessage.startWaitAnime();
+				}
+				if(!isNext()){
+					return;
+				}
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	ラベルジャンプ、スクリプト読み込み
+	//--------------------------------------------------------------
+	function jump(label){
+		//	string			ラベル
+		//	:string			ラベル
+		//	string:			ファイル名
+		//	string:string	ファイル名:ラベル
+		var result;
+		var filename="";
+		var array=(new RegExp("(.*?):(.*)")).exec(label);
+		if(array.count){
+			filename=array[1];
+			label=array[2];
+			if(filename!=""){									//	ファイル名が指定されていれば
+				loadScript(filename);							//	ファイルを読み込む
+			}
+//			dm("filename:"+filename);
+//			dm("label:"+label);
+			if(label!=""){										//	ラベルが指定されていれば
+				result=gotoLabel(label);						//	ラベルを探す
+				if(result==-1){
+					System.inform("undefined label in "+script.analysis.name+":"+script.analysis.counter+"\n"+script.analysis.line,"script error");
+					result=script.counter;
+				}
+			}else{
+				result=0;										//	指定されていなければファイルの先頭
+			}
+		}else{
+			//	:が無ければラベルとして扱う
+			result=gotoLabel(label);							//	ラベルを探す
+			if(result==-1){
+					System.inform("undefined label in "+script.analysis.name+":"+script.analysis.counter+"\n"+script.analysis.line,"script error");
+				result=script.counter;
+			}
+		}
+		return result;
+	}
+
+	function gotoLabelorFile(label){
+		if(script.compatibility){
+			//	互換モード
+			var result=gotoLabel(label);						//	ラベルを探す
+			if(result==-1){
+				loadScript(label);								//	見つからなかったらファイル名として扱う
+				result=0;
+			}
+			return result;
+		}else{
+			//	新モード
+			return jump(label);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	ラベルにジャンプ
+	//--------------------------------------------------------------
+	function gotoLabel(label){
+		var re=new RegExp("^[\t ]*#label[\t ]+"+label+"([\t ]|$)","i");
+		for(var line=0;line<script.lines.count;line++){
+			if(re.test(script.lines[line])){
+				return line;
+			}
+		}
+		return	-1;
+	}
+
+	//--------------------------------------------------------------
+	//	指定スクリプトの指定行から実行
+	//--------------------------------------------------------------
+	function jumpToLine(label){
+		var result;
+		var array=(new RegExp("(.*?):(.*)")).exec(label);
+		if(array.count==3){
+			loadScript(array[1]);
+			script.counter = expression(array[2])-1;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	if の処理
+	//--------------------------------------------------------------
+	function analysisIf(exp,label,counter){
+		if(expression(exp)){
+			//	true
+			if(label!==void){										//	ラベルが書いてあるなら
+				return gotoLabelorFile(label);						//	ラベルorファイルジャンプ
+			}
+		}else{
+			//	false
+			if(label===void){										//	ラベルが書いてない場合は#elseに飛ぶ
+				return gotoElse(counter);
+			}
+		}
+		return counter;
+	}
+
+	//--------------------------------------------------------------
+	//	elseにジャンプ
+	//	elseより先にendifが見つかったらendifにする
+	//--------------------------------------------------------------
+	function gotoElse(counter){
+		var	reif=new RegExp("^[\t ]*#if[\t ]+","i");
+		var	reelse=new RegExp("^[\t ]*#else","i");
+		var	reelseif=new RegExp("^[\t ]*#(elsif|elseif)","i");
+		var	reendif=new RegExp("^[\t ]*#endif","i");
+		while(counter<script.lines.count){
+			var line=script.lines[counter];
+			if(reelseif.test(line)){
+				var array=line.split(' ',,true);
+				if(/^\t*;/.test(array[2])){
+					array[2]=void;
+				}
+				return analysisIf(array[1],array[2],counter+1);
+			}else if(reendif.test(line)||reelse.test(line)){
+				return counter+1;
+			}else if(reif.test(line)){
+				//	ifが見つかったら次のendifまでスキップ
+				counter=gotoEndif(counter+1,reif,reendif);
+				continue;
+			}
+			++counter;
+		}
+		return	-1;
+	}
+
+	//--------------------------------------------------------------
+	//	endifにジャンプ
+	//		reifとreendifは再利用
+	//--------------------------------------------------------------
+	function gotoEndif(counter,reif=new RegExp("^[\t ]*#if[\t ]+","i"),reendif=new RegExp("^[\t ]*#endif","i")){
+		while(counter<script.lines.count){
+			if(reendif.test(script.lines[counter])){
+				return counter+1;
+			}else if(reif.test(script.lines[counter])){
+				//	ifが見つかったら次のendifまでスキップ
+				counter=gotoEndif(counter+1,reif,reendif);
+				continue;
+			}
+			++counter;
+		}
+		return	-1;
+	}
+
+	//--------------------------------------------------------------
+	//	スクリプトを読み込む
+	//--------------------------------------------------------------
+	function nextScript(filename){
+		if(filename.indexOf(":")==-1){
+			//	ファイル名だけを指定してた場合は":"を追加
+			filename=filename+":";
+		}
+		script.counter=jump(filename);
+	}
+
+	//--------------------------------------------------------------
+	//	スクリプトを呼ぶ
+	//--------------------------------------------------------------
+	function callScript(filename,save=false){
+		if(save){
+			var scr=new Dictionary();
+			var img=new Dictionary();
+	 		(Dictionary.assignStruct incontextof scr)(tLocalData.data.script);
+	 		(Dictionary.assignStruct incontextof img)(tLocalData.data.image);
+			tLocalData.pushStack([script.name,script.counter,scr,img]);
+		}else{
+			tLocalData.pushStack([script.name,script.counter]);
+		}
+		nextScript(filename);
+	}
+
+	//--------------------------------------------------------------
+	//	スクリプトから帰る
+	//--------------------------------------------------------------
+	function returnScript(){
+		var stack=tLocalData.popStack();
+		if(stack.count==4){
+	 		(Dictionary.assignStruct incontextof tLocalData.data.script)(stack[2]);
+	 		(Dictionary.assignStruct incontextof tLocalData.data.image)(stack[3]);
+			restartScript();
+			return true;
+		}else{
+			loadScript(stack[0]);
+			script.counter=stack[1];
+			return false;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	選択肢
+	//--------------------------------------------------------------
+	function setSelectMenu(itemCount,sflag,visibleFlag,enableFlag){
+		var count=0;
+		var useflag=new Array();
+		var sceneModeFlag=false;
+
+		for(var i=0;i<itemCount;i++){
+			//	visibleFlag bitが立っている && (通常時 || 回想モードかつ選ばれたことある選択肢)
+			if((visibleFlag&(1<<i))&&(!sceneModeFlag||(sflag&(1<<i)))){
+				useflag[i]=true;
+				++count;
+			}else{
+				useflag[i]=false;
+			}
+		}
+		if(count==0){
+			script.counter+=itemCount;
+			return false;
+		}
+
+		tSelect.clearSelect();
+		count=0;
+		for(var i=0;i<itemCount;i++){
+			if(useflag[i]){
+				tSelect.setSelect(count++,i,script.lines[script.counter],script.command[i],(visibleFlag&enableFlag&(1<<i))!=0);
+			}
+			++script.counter;
+		}
+
+		return	true;
+	}
+
+	//--------------------------------------------------------------
+	//	次の選択肢までスキップ
+	//--------------------------------------------------------------
+	function startNext(){
+
+		//	選択肢、マップ表示中はスキップしない
+		if(tSelect.isBusy()||tMap.isBusy()){
+			return;
+		}
+
+		script.next=true;
+
+		//	ワイプのキャンセル
+		if(tCanvas.isWipe()){
+			tCanvas.stopWipe();
+		}
+
+		//	表示途中のメッセージを処理する
+		tMessage.endKeyWait();
+		while(tMessage.isFade()||tMessage.isBusy()){
+			tMessage.tick(true);
+		}
+
+		//	アニメーションのキャンセル
+		tCanvasBeta.cancelAnime("all");
+		for(var i=waitListAnime.count-1;i>=0;i--){
+			waitListAnime.erase(i);
+		}
+
+		//	音声の停止
+		tSound.stopVoice();
+		for(var i=waitListSound.count-1;i>=0;i--){
+			waitListSound.erase(i);
+		}
+
+		//	Systemパネルのキャンセル
+		waitSystem=false;
+		tGameSystem.cancelFade();
+
+		//	waitのキャンセル
+		waitTime=0;
+
+		//	Wait Keyのキャンセル
+		waitKey=false;
+
+		//	SE、Voice停止
+		tSound.stopVoice();
+		tSound.stopSE();
+	}
+
+	function endNext(){
+		if(script.next){
+
+			script.next=false;
+
+			//	GameSystem 表示、非表示
+			tGameSystem.setVisible(tLocalData.getScriptGameSystemVisible());
+			tGameSystem.renewImage();
+
+			//	現在のレイヤを表示する
+			tCanvasBeta.resetLayer();
+			tCanvas.setWipe(WipeFade,,0);
+
+			//	現在のメッセージを表示する
+			if(script.nowWindowMode!==void){
+				tMessage.setMode(script.nowWindowMode);
+			}
+			var mes=script.nowMessage;
+			tMessage.clearMessage();
+			script.nowMessage=mes;
+			if(script.nowVisibleMessage){
+				tMessage.setMessage(tMessage.mode==tMessage.ModeWindow?mes:mes+"\\n",false,false);
+			}
+			tMessage.flashMessage();
+			tMessage.setVisible(true,false);
+			tMessage.reloadWindowImage();
+			script.nowVisibleMessage=true;
+
+			//	sound 復帰
+			tLocalData.restoreScriptBgm();
+			tLocalData.restoreScriptBgv();	//★バックグラウンドボイス
+
+		}
+	}
+
+	function isNext(){
+		return script.next;
+	}
+
+	//--------------------------------------------------------------
+	//	ボタン
+	//--------------------------------------------------------------
+	function setButton(id,image,x,y,hitthreshold,label){
+
+		var button=new TButton(tWindow,tWindow.layerButton,eventButton,id);
+		if(tSettings.screenCenter){
+			//	座標系が画面中央の場合は座標修正
+			button.setImage(x+tWindow.layerButton.width/2,y+tWindow.layerButton.height/2,image,true,true);
+		}else{
+			button.setImage(x,y,image,false,false);
+		}
+		button.hitThreshold=hitthreshold;
+		button.setVisible(true);
+		if(tLocalData.data.script.button[id]===void){
+			tLocalData.data.script.button[id]=new Dictionary();
+		}
+		tLocalData.data.script.button[id].button=button;
+		tLocalData.data.script.button[id].image=image;
+		tLocalData.data.script.button[id].x=x;
+		tLocalData.data.script.button[id].y=y;
+		tLocalData.data.script.button[id].hitthreshold=hitthreshold;
+		tLocalData.data.script.button[id].label=label;
+	}
+
+	function setButtonCursor(id,cursor){
+		if(tLocalData.data.script.button[id]===void){
+			tLocalData.data.script.button[id]=new Dictionary();
+		}
+		tLocalData.data.script.button[id].cursor=cursor;
+		if(tLocalData.data.script.button[id].button!==void){
+			tLocalData.data.script.button[id].button.setCursor(cursor);
+		}
+	}
+
+	function setButtonImage(id,filename,x,y){
+		if(tLocalData.data.script.button[id]===void){
+			tLocalData.data.script.button[id]=new Dictionary();
+		}
+		var temp=new TxLayer(tWindow,tWindow.layerButton);
+		temp.loadImages(filename);
+		temp.setSizeToImageSize();
+		if(tSettings.screenCenter){
+			//	座標系が画面中央の場合は座標修正
+			x+=(tWindow.layerButton.width-temp.width)/2;
+			y+=(tWindow.layerButton.height-temp.height)/2;
+		}
+		temp.setPos(x,y);
+		tLocalData.data.script.button[id].layer=temp;
+		tLocalData.data.script.button[id].button.enterEvent=true;
+	}
+
+	function setButtonSound(id,overSE,downSE){
+		if(tLocalData.data.script.button[id]===void){
+			tLocalData.data.script.button[id]=new Dictionary();
+		}
+		tLocalData.data.script.button[id].overSE=overSE;
+		tLocalData.data.script.button[id].downSE=downSE;
+		if(overSE=="off"){tLocalData.data.script.button[id].button.buttonStatus.overSE=void;}else if(overSE!="void"){tLocalData.data.script.button[id].button.buttonStatus.overSE=overSE;}
+		if(downSE=="off"){tLocalData.data.script.button[id].button.buttonStatus.downSE=void;}else if(downSE!="void"){tLocalData.data.script.button[id].button.buttonStatus.downSE=downSE;}
+	}
+
+	function clearButton(id){
+		invalidate tLocalData.data.script.button[id];
+		delete tLocalData.data.script.button[id];
+	}
+
+	function eventButton(param){
+
+		if(param.click==1){
+//			if(tLocalData.data.script.button[param.tag].sound!==void){
+//				try{
+//					tSound.play(TrackSE.sprintf(99),tLocalData.data.script.button[param.tag].sound,100,1,0,0);
+//				}catch(e){
+//				}
+//			}
+			callScript(tLocalData.data.script.button[param.tag].label,true);
+			tScript.waitKey=false;
+			tMessage.endKeyWait();
+			tSelect.clearSelect();
+			tCanvas.stopShakeScreen();
+			tCanvas.stopShakeMessage();
+			tCanvas.stopShakeCG("all");
+		}else{
+			if(param.enter){
+				//	アイテム表示
+				if(tLocalData.data.script.button[param.tag].layer!==void){
+					tLocalData.data.script.button[param.tag].layer.visible=true;
+				}
+			}else{
+				//	アイテム消去
+				for(var i=0;i<tLocalData.data.script.button.count;i++){
+					if(tLocalData.data.script.button[i]!==void){
+						if(tLocalData.data.script.button[param.tag].layer!==void){
+							tLocalData.data.script.button[param.tag].layer.visible=false;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	レイヤ名変換
+	//--------------------------------------------------------------
+	function makeLayerName(name=void){
+
+		if(name===void){
+			name=script.command.shift();
+			if("cg"==name){name=script.command.shift();}
+		}
+
+		var layer=assignLayer[name];
+		if(layer===void){
+			if(name=="bg"||name=="all"){
+				return name;
+			}
+			if(!(new RegExp("^[0-9]+$")).test(name)){
+				System.inform("undefined layer name in "+script.analysis.name+":"+script.analysis.counter+"\n"+script.analysis.line,"script error");
+				name=0;
+			}
+			return "cg"+expression(name);
+		}else{
+			return layer;
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	式評価
+	//--------------------------------------------------------------
+	function expression(str){
+		var result=0;
+		(Dictionary.clear incontextof expressiontemp.album)();
+		(Dictionary.clear incontextof expressiontemp.bgm)();
+		(Dictionary.clear incontextof expressiontemp.scene)();
+		(Dictionary.clear incontextof expressiontemp.title)();
+		str=(new RegExp("/","gi")).replace(str,"\\");						//	"/"は実数を返すので整数を返す"\"に変更
+		str=(new RegExp("false","gi")).replace(str,"0");					//	falseがフラグと認識されないように先に0に変換
+		str=(new RegExp("0x[0-9a-f]+","gi")).replace(str,hextoInt);			//	16進数は邪魔なので10進数に変換
+		str=nametoVariable(str);											//	定義された値をフラグに変換
+		str=(new RegExp("[fsabmt][0-9]*","gi")).replace(str,variabletoInt);	//	変数を計算
+
+		try{
+			result=calc(str);
+		}catch{
+			System.inform("syntax error in "+script.name+":"+script.counter+"\n"+script.lines[script.counter-1],"script error");
+		}
+
+		//	album、bgm、scene、titleをglobaldataに保存
+		var temp=[];
+		temp.assign(expressiontemp.album);
+		for(var i=0;i<temp.count;i+=2){
+			tGlobalData.setAlbum(temp[i],temp[i+1]);
+		}
+		temp.assign(expressiontemp.bgm);
+		for(var i=0;i<temp.count;i+=2){
+			tGlobalData.setBgm(temp[i],temp[i+1]);
+		}
+		temp.assign(expressiontemp.scene);
+		for(var i=0;i<temp.count;i+=2){
+			tGlobalData.setScene(temp[i],temp[i+1]);
+		}
+		temp.assign(expressiontemp.title);
+		for(var i=0;i<temp.count;i+=2){
+			tGlobalData.setTitle(temp[i],temp[i+1]);
+		}
+
+		return result;
+	}
+	function hextoInt(val){
+		return	calc(val[0]);
+	}
+	function variabletoInt(val){
+		if("s"==val[0].charAt(0)){
+			var index=+val[0].substring(1);
+			if(tGlobalData.data.flags.global[index]===void){
+				tGlobalData.data.flags.global[index]=0;
+			}
+			return "tGlobalData.data.flags.global["+index+"]";
+		}else if("f"==val[0].charAt(0)){
+			var index=+val[0].substring(1);
+			if(tLocalData.data.flags.local[index]===void){
+				tLocalData.data.flags.local[index]=0;
+			}
+			return "tLocalData.data.flags.local["+index+"]";
+		}else if("a"==val[0].charAt(0)){
+			if(val[0].length>1){
+				var index=+val[0].substring(1);
+				if(expressiontemp.album[index]===void){
+					expressiontemp.album[index]=tGlobalData.getAlbum(index);	//	tempにコピー
+				}
+				return "tScript.expressiontemp.album['"+index+"']";
+			}else{
+//				if(アダルトモード){
+					return 1;
+//				}else{
+//					return 0;
+//				}
+			}
+		}else if("b"==val[0].charAt(0)){
+			if(val[0].length>1){
+				var index=+val[0].substring(1);
+				if(expressiontemp.scene[index]===void){
+					expressiontemp.bgm[index]=tGlobalData.getBgm(index);	//	tempにコピー
+				}
+				return "tScript.expressiontemp.bgm['"+index+"']";
+			}else{
+				return 0;
+			}
+		}else if("m"==val[0].charAt(0)){
+			if(val[0].length>1){
+				var index=+val[0].substring(1);
+				if(expressiontemp.scene[index]===void){
+					expressiontemp.scene[index]=tGlobalData.getScene(index);	//	tempにコピー
+				}
+				return "tScript.expressiontemp.scene['"+index+"']";
+			}else{
+				if(script.scene){
+					return 1;
+				}else{
+					return 0;
+				}
+			}
+		}else if("t"==val[0].charAt(0)){
+			if(val[0].length>1){
+				var index=+val[0].substring(1);
+				if(expressiontemp.title[index]===void){
+					expressiontemp.title[index]=tGlobalData.getTitle(index);	//	tempにコピー
+				}
+				return "tScript.expressiontemp.title['"+index+"']";
+			}else{
+				return 0;
+			}
+		}
+		return	0;
+	}
+	function nametoVariable(str){
+		//	定義した名前を変数に変換
+		for(var i=0;i<assignFlag.count;i++){
+			str=(new RegExp(assignFlag[i][0],"gi")).replace(str,assignFlag[i][1]);
+		}
+		return str;
+	}
+}

@@ -1,0 +1,605 @@
+//==============================================================
+//	TButton
+//==============================================================
+
+class TButton extends TxLayer{
+
+	var event;
+	var filename;
+	var caption;
+	var buttonStatus;
+	var color;
+	var tag;
+	var enterEvent;
+	var pushing;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TButton(window,parent,event,tag=0){
+
+		super.Layer(window,parent);
+		type=ltAlpha;
+		hitThreshold=0;
+		color=0;
+		enterEvent=false;
+		caption=new Array();
+		pushing=false;
+
+		this.event=event;
+		buttonStatus=%['x'=>0,'y'=>0,'button'=>-1,'shift'=>0,'toggledown'=>false,'down'=>false,'enter'=>false,'enabled'=>true,'toggle'=>false,'tag'=>tag,'focus'=>false,'overSE'=>tSettings.buttonOverSE,'downSE'=>tSettings.buttonDownSE];
+//		buttonStatus=%['x'=>0,'y'=>0,'button'=>-1,'shift'=>0,'toggledown'=>false,'down'=>false,'enter'=>false,'enabled'=>true,'toggle'=>false,'tag'=>tag,'focus'=>false,'overSE'=>tSettings.buttonOverSE,'downSE'=>tSettings.buttonDownSE,'overSysVoice'=>'','downSysVoice'=>''];
+		renew();
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		super.finalize(...);
+		invalidate caption;
+		delete caption;
+	}
+
+	//--------------------------------------------------------------
+	//	ボタン設定
+	//--------------------------------------------------------------
+	function setImage(x,y,image,xcenter=false,ycenter=false){
+		loadImages(filename=image);
+		setSize(imageWidth,imageHeight\4);
+		setPos(xcenter?x-imageWidth/2:x,ycenter?y-imageHeight/8:y);
+	}
+
+	function changeImage(image){
+		loadImages(filename=image);
+	}
+
+	function setButton(x,y,width,height,color,xcenter=false,ycenter=false){
+		setSize(width,height);
+		setPos(xcenter?x-imageWidth/2:x,ycenter?y-imageHeight/8:y);
+		fillRect(0,0,this.width,this.height,this.color=color);
+	}
+
+	function setCaption(x,y,caption,size,color,xcenter=false,ycenter=false,index=void){
+		if(index===void){
+			for(var i=0;i<4;i++){
+				setCaption(x,y,caption,size,color,xcenter,ycenter,i);
+			}
+		}else{
+			this.caption[index]=caption;
+			font.height=size;
+			//フォント設定を反映する
+			font.face=tGlobalData.data.environment.fontFace;
+			font.bold=tGlobalData.data.environment.fontBold;
+			if(tSettings.fontOutline=='true'){	//袋文字？
+				if(tSettings.fontShadow=='true'){	//影？
+					drawText(x+(xcenter?imageWidth\2-font.getTextWidth(caption)\2:0),y+imageHeight\4*index+(ycenter?imageHeight\8-size\2:0),caption,tSettings.fontShadowColor,255,true,255,tSettings.fontShadowColor,2,2,2);
+					drawText(x+(xcenter?imageWidth\2-font.getTextWidth(caption)\2:0),y+imageHeight\4*index+(ycenter?imageHeight\8-size\2:0),caption,tSettings.fontColor,255,true,255*4,tSettings.fontOutlineColor,1,0,0);
+				}else{
+					drawText(x+(xcenter?imageWidth\2-font.getTextWidth(caption)\2:0),y+imageHeight\4*index+(ycenter?imageHeight\8-size\2:0),caption,tSettings.fontColor,255,true,255*4,tSettings.fontOutlineColor,1,0,0);
+				}
+			}else{
+				if(tSettings.fontShadow=='true'){	//影？
+					drawText(x+(xcenter?imageWidth\2-font.getTextWidth(caption)\2:0),y+imageHeight\4*index+(ycenter?imageHeight\8-size\2:0),caption,tSettings.fontColor,255,true,255,tSettings.fontShadowColor,1,1,1);
+				}else{
+					drawText(x+(xcenter?imageWidth\2-font.getTextWidth(caption)\2:0),y+imageHeight\4*index+(ycenter?imageHeight\8-size\2:0),caption,tSettings.fontColor,255,true,0,0,0,0,0);
+				}
+			}
+//			drawText(x+(xcenter?imageWidth\2-font.getTextWidth(caption)\2:0),y+imageHeight\4*index+(ycenter?imageHeight\8-size\2:0),caption,color&0x00ffffff,color>>24);
+		}
+	}
+
+	function setEnabled(enabled){
+		buttonStatus.enabled=enabled;
+		if(!enabled){
+			buttonStatus.enter=false;
+		}
+	}
+
+	function setFocus(focus){
+//		buttonStatus.focus=focus;
+		buttonStatus.enter=focus;
+		renew();
+	}
+
+	function setToggle(toggle){
+		buttonStatus.toggle=toggle;
+	}
+
+	function setToggleDown(toggle){
+		buttonStatus.toggledown=toggle;
+		renew();
+	}
+
+	function setVisible(visible){
+		this.visible=visible;
+		renew();
+	}
+
+	function setObject(object){
+		buttonStatus.object=object;
+	}
+
+	function addGroup(object){
+		if(buttonStatus.groups===void){
+			buttonStatus.groups=new Array();
+		}
+		buttonStatus.groups.add(object);
+	}
+
+	function setCursor(param){
+		cursor=tWindow.getCursor(param);
+	}
+
+	function setOverSE(param){
+		buttonStatus.overSE=param=="void"?void:param;
+	}
+
+	function setDownSE(param){
+		buttonStatus.downSE=param=="void"?void:param;
+	}
+
+	function setWipeDisabled(func){
+		buttonStatus.wipeDisabled=func;
+	}
+
+	//--------------------------------------------------------------
+	//	renew
+	//--------------------------------------------------------------
+	function renew(){
+		if(filename!==void){
+			if(pushing){
+				setImagePos(0,-imageHeight\4*2);
+			}else{
+				if(!buttonStatus.enabled){
+					setImagePos(0,-imageHeight\4*3);
+				}else if(buttonStatus.toggledown||(buttonStatus.down&&buttonStatus.enter)){
+					setImagePos(0,-imageHeight\4*2);
+				}else if(buttonStatus.enter){
+					setImagePos(0,-imageHeight\4*1);
+				}else{
+					setImagePos(0,0);
+				}
+			}
+		}
+	}
+
+	//ボタン押しっぱなし
+	function push(onoff){
+		pushing=onoff;
+		renew();
+	}
+
+	function changeGroup(groups){
+		var flag=false;
+		if(groups!==void){
+			for(var i=0;i<groups.count;i++){
+				if(groups[i]!==void){
+					groups[i].setEnabled(true);
+					groups[i].setToggleDown(false);
+					groups[i].renew();
+					flag=true;
+				}
+			}
+		}
+		if(flag){
+			setEnabled(false);
+			renew();
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	Event
+	//--------------------------------------------------------------
+	function onMouseDown(x,y,button,shift){
+		if(buttonStatus.enabled&&(buttonStatus.wipeDisabled===void||!buttonStatus.wipeDisabled())){
+			if(button==mbLeft){										//	左ボタンのみ反応
+				if(buttonStatus.button==-1){
+					buttonStatus.button=button;
+					buttonStatus.x=x;
+					buttonStatus.y=y;
+					buttonStatus.down=true;
+					renew();
+				}
+				return;
+			}
+		}
+		super.onMouseDown(...);
+	}
+	function onMouseUp(x,y,button,shift){
+		if(buttonStatus.enabled&&(buttonStatus.wipeDisabled===void||!buttonStatus.wipeDisabled())){
+			if(buttonStatus.button==button){
+				buttonStatus.button=-1;
+				buttonStatus.down=false;
+				if(x>=0&&y>=0&&x<width&&y<height){
+					if(buttonStatus.toggle){
+						buttonStatus.toggledown=!buttonStatus.toggledown;
+					}
+					if(buttonStatus.downSE!==void){
+						if(buttonStatus.downSE.substr(0,3)=='***' && tGlobalData.data.environment.sysVoice=='def') tSound.play("sebtnup",tSettings.buttonDownSE,100,1);
+						else tSound.play("sebtnup",buttonStatus.downSE,100,1);
+					}
+					renew();
+					changeGroup(buttonStatus.groups);
+					buttonStatus.click=true;
+					event(buttonStatus);
+					buttonStatus.click=false;
+					return;
+				}else{
+					buttonStatus.enter=false;
+				}
+				renew();
+				return;
+			}
+		}
+		super.onMouseUp(...);
+	}
+	function onMouseMove(x,y,shift){
+		if(buttonStatus.enabled&&(buttonStatus.wipeDisabled===void||!buttonStatus.wipeDisabled())){
+			if(x>=0&&y>=0&&x<width&&y<height){
+				if(!buttonStatus.enter){
+					buttonStatus.enter=true;
+					if(buttonStatus.overSE!==void){
+						if(buttonStatus.overSE.substr(0,3)=='***' && tGlobalData.data.environment.sysVoice=='def') tSound.play("sebtn",tSettings.buttonOverSE,100,1);
+						else tSound.play("sebtn",buttonStatus.overSE,100,1);
+					}
+					renew();
+				}
+				return;
+			}else{
+				if(buttonStatus.enter){
+					buttonStatus.enter=false;
+					renew();
+				}
+			}
+		}
+		super.onMouseMove(...);
+	}
+	function onMouseEnter(){
+		if(buttonStatus.enabled&&(buttonStatus.wipeDisabled===void||!buttonStatus.wipeDisabled())){
+			if(!buttonStatus.enter){
+				buttonStatus.enter=true;
+				if(buttonStatus.overSE!==void){
+					if(buttonStatus.overSE.substr(0,3)=='***' && tGlobalData.data.environment.sysVoice=='def') tSound.play("sebtn",tSettings.buttonOverSE,100,1);
+					else tSound.play("sebtn",buttonStatus.overSE,100,1);
+				}
+				renew();
+				if(enterEvent){
+					event(buttonStatus);
+				}
+			}
+		}
+	}
+	function onMouseLeave(){
+		if(buttonStatus.enabled){
+			if(buttonStatus.enter){
+				buttonStatus.enter=false;
+				renew();
+				if(enterEvent){
+					event(buttonStatus);
+				}
+			}
+		}
+	}
+}
+
+
+//==============================================================
+//	TSlider
+//==============================================================
+
+class TSlider{
+
+	var ModeHorizontal=0,ModeVirtical=1;
+	var base,pin;
+	var tag;
+	var mode;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TSlider(window,parent,event,tag=0){
+
+		mode=ModeHorizontal;
+		base=new TSliderBase(window,parent,event,tag,this);
+		pin=new TSliderPin(window,base,this);
+		pin.visible=true;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		delete base;
+		delete pin;
+	}
+
+	//--------------------------------------------------------------
+	//	画像設定
+	//--------------------------------------------------------------
+	function setImage(x,y,image,image2,xcenter=false,ycenter=false){
+		base.setImage(x,y,image,xcenter,ycenter);
+		pin.loadImage(image2);
+//		base.setPosition(50,false);
+	}
+
+	//--------------------------------------------------------------
+	//	ステータス設定
+	//--------------------------------------------------------------
+	function setMax(max){
+		base.buttonStatus.max=max;
+	}
+
+	function setPitch(pitch){
+		base.buttonStatus.pitch=pitch;
+	}
+
+	function setPosition(position,call=true){
+		base.setPosition(...);
+	}
+
+	function setCursor(param){
+		base.setCursor(param);
+		pin.cursor=base.cursor;
+	}
+
+	function setWipeDisabled(func){
+		base.buttonStatus.wipeDisabled=func;
+	}
+
+	//--------------------------------------------------------------
+	//	表示
+	//--------------------------------------------------------------
+	function setVisible(visible){
+		base.visible=visible;
+	}
+}
+
+class TSliderBase extends TButton{
+
+	var owner;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TSliderBase(window,parent,event,tag=0,owner){
+
+		super.TButton(...);
+		this.owner=owner;
+		buttonStatus.position=0;
+		buttonStatus.max=100;
+		buttonStatus.pitch=10;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		super.finalize(...);
+	}
+
+	//--------------------------------------------------------------
+	//	ステータス設定
+	//--------------------------------------------------------------
+	function setPosition(position,call=true,force=false){
+		if(children!==void&&children.count>0){
+			if(position<0){
+				position=0;
+			}
+			if(position>buttonStatus.max){
+				position=buttonStatus.max;
+			}
+			if(buttonStatus.position!==position||force){
+				buttonStatus.position=position;
+				if(owner.mode==owner.ModeHorizontal){
+					children[0].left=(width-children[0].width)*position\buttonStatus.max;
+				}else{
+					children[0].top=(height-children[0].height)*position\buttonStatus.max;
+				}
+				if(call){
+					event(buttonStatus);
+				}
+			}
+		}
+	}
+
+	function move(pos,base){
+		var p=(pos*buttonStatus.max+base\2)\base;
+		if(buttonStatus.position!==p){
+			buttonStatus.position=p;
+			event(buttonStatus);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	event
+	//--------------------------------------------------------------
+	function onMouseDown(x,y,button,shift){
+		if(buttonStatus.wipeDisabled!==void&&buttonStatus.wipeDisabled()){
+			return;
+		}
+		super.onMouseDown(...);
+	}
+	function onMouseUp(x,y,button,shift){
+		if(buttonStatus.wipeDisabled!==void&&buttonStatus.wipeDisabled()){
+			return;
+		}
+		if(buttonStatus.enabled){
+			if(buttonStatus.button==button){
+				buttonStatus.button=-1;
+				buttonStatus.down=false;
+				if(x>=0&&y>=0&&x<width&&y<height){
+					if(children!==void&&children.count>0){
+						if(owner.mode==owner.ModeHorizontal){
+							if(x<=children[0].left){
+								setPosition(buttonStatus.position-buttonStatus.pitch);
+							}else{
+								setPosition(buttonStatus.position+buttonStatus.pitch);
+							}
+						}else{
+							if(y<=children[0].top){
+								setPosition(buttonStatus.position-buttonStatus.pitch);
+							}else{
+								setPosition(buttonStatus.position+buttonStatus.pitch);
+							}
+						}
+						if(buttonStatus.downSE!==void){
+							if(buttonStatus.downSE.substr(0,3)=='***' && tGlobalData.data.environment.sysVoice=='def') tSound.play("sebtnup",tSettings.buttonDownSE,100,1);
+							else tSound.play("sebtnup",buttonStatus.downSE,100,1);
+						}
+					}
+					renew();
+					return;
+				}else{
+					buttonStatus.enter=false;
+				}
+				renew();
+				return;
+			}
+		}
+		super.onMouseUp(...);
+	}
+	function onMouseMove(x,y,shift){
+		if(buttonStatus.wipeDisabled!==void&&buttonStatus.wipeDisabled()){
+			return;
+		}
+		super.onMouseMove(...);
+	}
+}
+
+class TSliderPin extends TxLayer{
+
+	var owner;
+	var x,y,dx,dy;
+	var enter,down;
+	var enabled;
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TSliderPin(window,parent,owner){
+
+		super.Layer(window,parent);
+		this.owner=owner;
+		type=ltAlpha;
+		hitThreshold=0;
+		enter=false;
+		down=false;
+		parent.buttonStatus.downPin=false;
+		enabled=true;
+		x=0,y=0;
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		super.finalize(...);
+	}
+
+	//--------------------------------------------------------------
+	//	イメージ読み込み
+	//--------------------------------------------------------------
+	function loadImage(filename){
+		super.loadImages(filename);
+		super.setSize(imageWidth,imageHeight\4);
+		render();
+	}
+
+	//--------------------------------------------------------------
+	//	render
+	//--------------------------------------------------------------
+	function render(){
+		var y=(parent.height-imageHeight\4)\2;
+		if(!enabled){
+			setImagePos(0,-imageHeight\4*3);
+		}else if(down){
+			setImagePos(0,-imageHeight\4*2);
+		}else if(enter){
+			setImagePos(0,-imageHeight\4*1);
+		}else{
+			setImagePos(0,0);
+		}
+	}
+
+	//--------------------------------------------------------------
+	//	event
+	//--------------------------------------------------------------
+	function onMouseEnter(){
+		if(parent.buttonStatus.wipeDisabled!==void&&parent.buttonStatus.wipeDisabled()){
+			return;
+		}
+		parent.onMouseEnter();
+		enter=true;
+		render();
+	}
+	function onMouseLeave(){
+		if(parent.buttonStatus.wipeDisabled!==void&&parent.buttonStatus.wipeDisabled()){
+			return;
+		}
+		parent.onMouseLeave();
+		enter=false;
+		render();
+	}
+	function onMouseDown(x,y,button,shift){
+		if(parent.buttonStatus.wipeDisabled!==void&&parent.buttonStatus.wipeDisabled()){
+			return;
+		}
+		//押した際にSE鳴るように
+		if(parent.buttonStatus.downSE!==void){
+			if(parent.buttonStatus.downSE.substr(0,3)=='***' && tGlobalData.data.environment.sysVoice=='def') tSound.play("sebtnup",tSettings.buttonDownSE,100,1);
+			else tSound.play("sebtnup",parent.buttonStatus.downSE,100,1);
+//			tSound.play("sebtnup",parent.buttonStatus.downSE,100,1);
+		}
+		if(button==mbLeft){
+			dx=x;
+			dy=y;
+			down=true;
+			parent.buttonStatus.downPin=true;
+			render();
+			return;
+		}
+		super.onMouseDown(...);
+	}
+	function onMouseUp(x,y,button,shift){
+		if(parent.buttonStatus.wipeDisabled!==void&&parent.buttonStatus.wipeDisabled()){
+			return;
+		}
+		if(button==mbLeft){
+			down=false;
+			parent.buttonStatus.downPin=false;
+			render();
+			parent.event(parent.buttonStatus);
+			return;
+		}
+		super.onMouseUp(...);
+	}
+	function onMouseMove(x,y,shift){
+		if(parent.buttonStatus.wipeDisabled!==void&&parent.buttonStatus.wipeDisabled()){
+			return;
+		}
+		if(down){
+			if(owner.mode==owner.ModeHorizontal){
+				left=left+x-dx;
+				if(left<0){
+					left=0;
+				}
+				if(left>=parent.width-width){
+					left=parent.width-width;
+				}
+				parent.move(left,parent.width-width);
+			}else{
+				top=top+y-dy;
+				if(top<0){
+					top=0;
+				}
+				if(top>=parent.height-height){
+					top=parent.height-height;
+				}
+				parent.move(top,parent.height-height);
+			}
+			return;
+		}
+		super.onMouseMove(...);
+	}
+}

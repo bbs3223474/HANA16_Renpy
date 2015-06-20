@@ -1,0 +1,84 @@
+//==============================================================
+//	TLayer
+//==============================================================
+class TLayer extends Layer{
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TLayer(window,parent){
+		super.Layer(window,parent);
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		super.finalize(...);
+	}
+
+	//--------------------------------------------------------------
+	//	Event
+	//--------------------------------------------------------------
+	function onClick(x, y){
+		window.onClickEx(...);
+	}
+	function onDoubleClick(x, y){
+		window.onDoubleClickEx(...);
+	}
+	function onMouseDown(x,y,button,shift){
+		window.onMouseDownEx(...);
+	}
+	function onMouseUp(x,y,button,shift){
+		window.onMouseUpEx(...);
+	}
+	function onMouseMove(x,y,shift){
+		window.onMouseMoveEx(...);
+	}
+
+}
+
+//==============================================================
+//	TxLayer
+//==============================================================
+class TxLayer extends Layer{
+
+	//--------------------------------------------------------------
+	//	Constructor
+	//--------------------------------------------------------------
+	function TxLayer(window,parent){
+		super.Layer(window,parent);
+	}
+
+	//--------------------------------------------------------------
+	//	Destructor
+	//--------------------------------------------------------------
+	function finalize(){
+		super.finalize(...);
+	}
+
+	//--------------------------------------------------------------
+	//	Event
+	//--------------------------------------------------------------
+	function onClick(x, y){
+		parent.onClick(left+x,top+y);
+	}
+	function onDoubleClick(x, y){
+		parent.onDoubleClick(left+x,top+y);
+	}
+	function onMouseDown(x,y,button,shift){
+		parent.onMouseDown(left+x,top+y,button,shift);
+	}
+	function onMouseUp(x,y,button,shift){
+		parent.onMouseUp(left+x,top+y,button,shift);
+	}
+	function onMouseMove(x,y,shift){
+		parent.onMouseMove(left+x,top+y,shift);
+	}
+	function onMouseLeave(){
+		parent.onMouseLeave();
+	}
+	function onMouseEnter(){
+		parent.onMouseEnter();
+	}
+}

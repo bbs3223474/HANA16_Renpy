@@ -1,0 +1,192 @@
+//==============================================================
+//	TYesNoDialog
+//★2012.12.06改修
+//==============================================================
+
+class TYesNoDialog extends Window{
+
+	var yesButton;		//	[はい] ボタン
+	var noButton;		//	[いいえ] ボタン
+	var result=false;	//	no:false yes:true
+	var items;
+	var layer;
+
+	function TYesNoDialog(message,cap){
+
+		super.Window();
+
+		// このウィンドウではもっとも基本的なdrawerを用いる
+//		drawDevice.preferredDrawer = global.Window.PassThroughDrawDevice.dtDrawDib;
+
+		// メインウィンドウから cursor**** の情報をとってくる
+//		if(global.Window.mainWindow !== null &&
+//			typeof global.Window.mainWindow.cursorDefault != "undefined")
+//			this.cursorDefault = global.Window.mainWindow.cursorDefault;
+//		if(global.Window.mainWindow !== null &&
+//			typeof global.Window.mainWindow.cursorPointed != "undefined")
+//			this.cursorPointed = global.Window.mainWindow.cursorPointed;
+
+		//	外見の調整
+		borderStyle=bsDialog;
+		innerSunken=false;
+		caption=cap;
+		showScrollBars=false;
+
+		//	プライマリレイヤの作成
+		add(new Layer(this,null));
+
+		// プライマリのマウスカーソルを設定
+//		primaryLayer.cursor=tWindow.getCursor(tSettings.cursorDefault);
+		primaryLayer.cursor=tWindow.getCursor(tSettings.cursorDefault);
+
+		var iw,ih,ty,tcolor;
+		items=new Array();
+		var lines=new Array();
+
+		//設定完了したら数値を入力
+		var c_image=0;
+		var c_caption=0;
+		var c_button=0;
+
+		//文字を表示するかどうか
+		var str_visible=true;
+
+		lines.load(FileYesNoSetting);
+		for(var i=0;i<lines.count;i++){
+			var key,object,idx,pattern;
+			if((idx=lines[i].indexOf(":"))>0){
+				key=lines[i].substring(0,idx).trim();
+				pattern=lines[i].substring(idx+1,lines[i].indexOf('\t')-idx).trim();
+				object=lines[i].substring(lines[i].indexOf('\t')).trim();
+			}
+			if(key!==void&&object!=""){
+				if(message==pattern||''==pattern){
+					if("image"==key&&c_image<1){
+						var param=object.split(' \t',,true);
+						var image=param[0];
+						iw=+param[1];
+						ih=+param[2];
+						layer=new Layer(this,primaryLayer);
+						layer.loadImages(image);
+						layer.setSizeToImageSize();
+						layer.setPos(0,0);
+						layer.visible=true;
+						c_image++;
+					}else if("caption"==key&&c_caption<1){
+						var param=object.split(' \t',,true);
+						ty=+param[0];
+						tcolor=+param[1];
+						layer.font.height=+param[2];
+						str_visible=param[3];
+						c_caption++;
+					}else if("button"==key&&c_button<2){
+						var param=object.split(' \t',,true);
+						var tag=param[0];
+						var image=param[1];
+						var x=+param[2],y=+param[3];
+						var overSE=param[4];
+						var downSE=param[5];
+						var cursor=param[6];
+						var temp=new TButton(this,primaryLayer,event,tag);
+						temp.setImage(x,y,image);
+						temp.setCursor(cursor);
+						temp.setVisible(true);
+						//SE設定
+						if(overSE=="off"){temp.buttonStatus.overSE=void;}else if(overSE!="void"){temp.buttonStatus.overSE=overSE;}
+						if(downSE=="off"){temp.buttonStatus.downSE=void;}else if(downSE!="void"){temp.buttonStatus.downSE=downSE;}
+						items.add(temp);
+						c_button++;
+					}
+				}
+			}
+		}
+
+		// サイズを決定
+		setInnerSize(primaryLayer.width=(iw?iw:layer.width),primaryLayer.height=(ih?ih:layer.height));
+
+		// ウィンドウ位置の調整
+		if(tWindow!==void){
+			var win=tWindow;
+			var l,t;
+			l=((win.width-width)>>1)+win.left;
+			t=((win.height-height)>>1)+win.top;
+			if(l<0)l=0;
+			if(t<0)t=0;
+			if(l+width>System.screenWidth)l=System.screenWidth-width;
+			if(t+height>System.screenHeight)t=System.screenHeight-height;
+			setPos(l,t);
+		}else{
+			setPos((System.screenWidth-width)>>1,(System.screenHeight-height)>>1);
+		}
+
+		// メッセージの描画
+		if (str_visible) {
+			var tw=layer.font.getTextWidth(message);
+			var th=layer.font.getTextHeight(message);
+			layer.drawText((innerWidth-tw)>>1,ty,message,tcolor);
+		}
+	}
+
+	function finalize(){
+		delete items;
+		super.finalize(...);
+	}
+
+	function event(param){
+		if(param.tag=="yes"){
+			result=true;
+		}
+		close();
+	}
+
+	function onKeyDown(key,shift){
+		super.onKeyDown(...);
+//		dm("key down "+key);
+		if(key==VK_ESCAPE){
+			//	ESC キーが押された
+			//	「いいえ」として処理
+			result=false;
+			close();
+		}else if(key==VK_LEFT){
+			items[0].setFocus(true);
+			items[1].setFocus(false);
+		}else if(key==VK_RIGHT){
+			items[0].setFocus(false);
+			items[1].setFocus(true);
+		}else if(key==VK_Y){
+			//「Y」で[はい]選択処理
+			result=true;
+			close();
+		}else if(key==VK_N){
+			//「N」で[いいえ]選択処理
+			result=false;
+			close();
+		}else if(key==VK_RETURN){
+			for(var i=0;i<items.count;i++){
+				if(items[i].buttonStatus.enter){
+					result=items[i].buttonStatus.tag=="yes";
+					close();
+					return;
+				}
+			}
+		}
+	}
+
+	function onMouseUp(x,y,button,shift){
+		//右クリックは「いいえ」として処理
+		if(button==mbRight){
+			result=false;
+			close();
+		}
+		super.onMouseUp(...);
+	}
+}
+
+// Yes か No かはっきりさせる関数
+function askYesNo(message,caption="確認"){
+	var win=new TYesNoDialog(message,caption);
+	win.showModal();
+	var res=win.result;
+	invalidate win;
+	return res;
+}

@@ -1,0 +1,38 @@
+//--------------------------------------------------------------
+//	DictionaryからKeyやObjectを取得
+//--------------------------------------------------------------
+function getKeys(dic){
+	return getDicElementImpl(dic,1);
+}
+
+function getObjects(dic){
+	return getDicElementImpl(dic,0);
+}
+function getDicElementImpl(dic,ei=1){
+	var	array=new Array();
+	array.assign(dic);
+	var	lp=array.count\2;
+	for(var i=0;i<lp;i++){
+		array.erase(i+ei);
+	}
+	return array;
+}
+
+//--------------------------------------------------------------
+//	レンジ
+//--------------------------------------------------------------
+function range255(val){
+	if(val>255){
+		return 255;
+	}else if(val<0){
+		return 0;
+	}else{
+		return val;
+	}
+}
+
+//--------------------------------------------------------------
+//	evalのクロージャ
+//--------------------------------------------------------------
+var calc=Scripts.eval;
+
