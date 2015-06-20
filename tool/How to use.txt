@@ -1,0 +1,29 @@
+# This file was used to declare how to use these tools,
+# I think it's not so difficult for Chinese developers to get use to them,
+# but still necessary to explain something to foreign developers.
+
+# 1.How to use "krkr2rpy.html"?
+
+-- Open the original script with a supportive editor, copy all things.
+-- Open krkr2rpy.html, then you can see two space used to put texts.
+-- Paste what you just copied into the left one, and click the arrow button.
+-- Then you can see (almost)every original script was translated to ren'py's.
+-- Create a new .rpy script, and paste what you have got into it.
+-- Fix bugs or other problems.
+
+# 2.How to use "crass-0.4.14.0-final.zip"?
+
+Crass is a tool witten by Chinese developer and used to extract resources from visual novel game. 
+It supports many engines but has not updated for years, so you may find it faild to extract something new.
+Also, it uses the models from game engines themselves to extract, so you can also meet some situation like:
+"Sorry, but developer don't want you to extract them by illegal way."
+But dispite them all, we can still extract some games created by some common engine and didn't been protected.
+
+In this game, you just have to do:
+--Extract zip file and open "CrageGUI.exe"
+--Select "Source File" then click "Browse"
+--Choose script.xp3 inside game folder
+--Click "Execute" to extract selected resource file, it will automatically create a folder named by .xp3 file itself.
+--Goto Crass's folder and search for the folder called "script"
+--Copy it to your position
+--After this, just use the same way to extract every resources files inside original game folder.
