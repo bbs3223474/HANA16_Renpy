@@ -8,7 +8,7 @@
 # We chose "if" statement to judge whether player have choose the option or not, but because we did not define the name we use to judge,
 # So we can use "default" to pre-define those name and set as "Fasle" at first.
 # Then wait to the players choose one option, set the corresponding judgement as "True" by using "$". And use "if" at the end to judge what player have chosen.
-# I was trapped here a long time, finally I noticed that just like the "menu" statement, "if" statement also have strict requirement in numbers of spaces.
+# I was trapped here a long time, finally I noticed that not just the "menu" statement, "if" statement also have a strict requirement in numbers of spaces.
 # For details, just look at this script.
 
 #「本当の気持ち」
@@ -423,14 +423,14 @@ with dis
 "いくらベストカップルに選ばれているとはいえ、ありえないって。"
 
 # 此处已去除游戏强制二周目解锁其他角色路线的设定。
-# Removed the limit of force goto Rika&Sayuki route at first play.
+# Removed the limit of force goto Rika&Sayuki route at the first play.
 #★★★選択肢関係の加筆　ここから
 #//（１周目は、こっちのシナリオです）
 #if s1==1 sentaku
 menu:
  "璃紗と美夜の様子を見る":
-  jump select06_1
   $ risa_route = True
+  jump select06_1
  "七海と優菜の様子を見る":
   $ nanami_route = True
   jump select06_2
