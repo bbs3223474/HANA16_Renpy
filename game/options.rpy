@@ -626,16 +626,33 @@ init python:
     ## None に分類したファイルはディストリビューションに含まれません。
 
     build.classify('**~', None)
-    build.classify('**.bak', None)
-    build.classify('**/.**', None)
+    # build.classify('**.bak', None)
+    # build.classify('**/.**', None)
     build.classify('**/#**', None)
     build.classify('**/thumbs.db', None)
 
+    ## 此处用于定义游戏资源封包的名称。
+    build.archive('script', 'all')
+    build.archive('image', 'all')
+    build.archive('bg', 'all')
+    build.archive('voice', 'all')
+    build.archive('char', 'all')
+    build.archive('sound', 'all')
+    build.archive('data', 'all')
+
     ## To archive files, classify them as 'archive'.
     ## アーカイブに含めるには、'archive' に分類します。
-
-    # build.classify('game/**.png', 'archive')
-    # build.classify('game/**.jpg', 'archive')
+    ## 此处用于定义需要放进封包的游戏资源文件列表，需要事先定义。
+    build.classify('game/**.rpy', 'script')
+    build.classify('game/**.rpyc', 'script')
+    build.classify('game/**.rpyb', 'script')
+    build.classify('game/bg/**.png', 'image')
+    build.classify('game/char/**.png', 'image')
+    build.classify('game/image/**.png', 'image')
+    build.classify('game/voice/**.ogg', 'voice')
+    build.classify('game/sound/**.ogg', 'sound')
+    build.classify('game/data/**.**', 'data')
+    build.classify('game/data/mask/**.**', 'data')
 
     ## Files matching documentation patterns are duplicated in a mac app
     ## build, so they appear in both the app and the zip file.
