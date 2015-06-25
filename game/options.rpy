@@ -35,7 +35,7 @@ init -1 python hide:
     ## ゲームがウインドウモードで起動している時の
     ## ウインドウタイトルを変更します。
 
-    config.window_title = u"その花びらにくを　白雪の騎士"
+    config.window_title = u"その花びらにくを　白雪の騎士 Ren'py version"
 
     # These control the name and version of the game, that are reported
     # with tracebacks and other debugging logs.
@@ -112,8 +112,7 @@ init -1 python hide:
     #########################################
     ## These settings let you customize the window containing the
     ## dialogue and narration, by replacing it with an image.
-    ## 以下の項目は、ダイアログとナレーション表示するウインドウを、
-    ## 画像で置き換えてカスタマイズします。
+    ## 以下项目可让你替换游戏中的文本框背景图像
 
     ## 訳注：より詳細なカスタマイズは  screen で行ないます。
     ## screen 内で記述されたスタイルは init python 内で記述された
@@ -125,7 +124,7 @@ init -1 python hide:
     ## ウィンドウの背景です。Frame を使う場合、２つの数字は
     ## 左右、上下それぞれの枠のサイズです。
 
-    # style.window.background = Frame("frame.png", 12, 12)
+    style.window.background = Frame("image/messagewindow.png", 1, 1)
 
     ## Margin is space surrounding the window, where the background
     ## is not drawn.
@@ -344,7 +343,7 @@ init -1 python hide:
     ## そのファイルを開きます。
     ## None に設定するとヘルプを無効にします。
 
-    config.help = "README.html"
+    config.help = None
 
 
     #########################################
@@ -662,14 +661,17 @@ init python:
 
     # 打开移动平台上的视频硬件加速，提升视频播放性能。
     # 理论上绝大多数平台支持硬件加速功能。
-    #config.hw_video = True
+    config.hw_video = True
 
     # 打开选择肢自动存档功能，存档将会放到Q.Save位置。
     #config.autosave_on_choice = True
 
-    # 定义游戏中left与right的实际位置
+    # 定义游戏中left与right等代码的实际位置
 init:
     $ left = Position(xpos=0.26, ypos=1.0)
     $ right = Position(xpos=0.75, ypos=1.0)
     $ sleft = Position(xpos=0.19, ypos=1.0)
     $ sright = Position(xpos=0.82, ypos=1.0)
+    $ hleft = Position(xpos=0.26, ypos=0.5)
+    $ hc = Position(xpos=0.5, ypos=0.5)
+    $ hr = Position(xpos=0.75, ypos=0.5)
