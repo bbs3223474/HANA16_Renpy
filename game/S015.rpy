@@ -1548,7 +1548,7 @@ voice "Reo_0096"
 re "「まーいーっ、ごはんまだー！？」"
 
 
-show char tma03p at left
+show char tma03p at hleft
 show char tre01f2 at right as r
 with dis
 
@@ -1567,7 +1567,7 @@ voice "Reo_0097"
 re "「ぅぅっ、いつもより１時間も遅いんだから。もうお腹ペコペコよぉ……あっ、そういえば、綾瀬美夜から貰った焼き菓子の残りが……」"
 
 
-show char tma01p at left
+show char tma01p at hleft
 with dis
 
 
@@ -1586,7 +1586,7 @@ re "「……はぁい。もう、どうしてわかっちゃったのかな、�
 voice "Reo_0099"
 re "「………………よんじゅはーち、よんじゅきゅー、ごーじゅ！　はい麻衣、３分経ったわよ」"
 
-
+hide char tma01p at hleft
 show char tma01f2 at left
 with dis
 

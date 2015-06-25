@@ -192,7 +192,8 @@ r "「秘密って……」"
 voice "Risa_0669"
 r "「七海さん、何かありますか？」"
 
-
+hide char tsa03m at left
+hide char tri03m at right as r
 show char tna03m at sleft as l
 show char tsa03m
 show char tri03m at sright as sr

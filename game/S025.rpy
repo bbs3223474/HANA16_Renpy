@@ -335,15 +335,15 @@ rk "「そうですね、気持ちいいですよ。じゃあ沙雪さん……�
 #１．『泳げるようになると、良いですね』×
 #２．『今度、泳ぎを教えましょうか？』○
 menu:
-	"泳げるようになると、良いですね":
-	 jump select04_1
-	"今度、泳ぎを教えましょうか？":
-	 jump select04_2
+ "泳げるようになると、良いですね":
+  jump select04_1
+ "今度、泳ぎを教えましょうか？":
+  jump select04_2
 
 
 
 #１．『泳げるようになると、良いですね』
-label select04_1
+label select04_1:
 
 
 voice "Rikka_0406"
@@ -359,7 +359,7 @@ jump select04_end
 
 
 #２．『今度、泳ぎを教えましょうか？』
-label select04_2
+label select04_2:
 
 
 voice "Rikka_0407"
@@ -373,7 +373,7 @@ rk "「それなら今度、一緒に……泳ぎを……教え……」"
 
 #++選択肢終了
 #★★★選択肢　ここまで
-label select04_end
+label select04_end:
 
 
 show char tsy01m at right as r

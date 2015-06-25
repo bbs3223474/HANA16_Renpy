@@ -90,7 +90,7 @@ hide char tmi01f2 at left
 hide char tri04f2 at right as r
 #lastBG:
 #scene bg bg38a
-show char tna02p
+show char tna02p at hc
 with dis
 
 
@@ -111,6 +111,7 @@ r "「やっぱり七海さんだわ、七海さぁーん！」"
 
 hide char tmi01f2 at left
 hide char tri01f2 at right as r
+hide char tna02p at hc
 show char tna01f2 at sleft as l
 show char tmi01f2
 show char tri01f2 at sright as sr

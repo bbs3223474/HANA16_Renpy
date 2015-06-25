@@ -241,7 +241,7 @@ n "「本当に、優秀なのよ……ものすごく、ね」"
 scene black
 with dis
 scene bg bg05a
-#with##############################
+with rr
 show char alpha
 with fade
 show char tna04s2
@@ -288,7 +288,7 @@ with dis
 "七海さんが嘆いていた原因の方が、この沙雪さんだったのね……"
 
 scene bg bg36a
-#with ###########################
+with lr
 "今日も沙雪さんの話をしている七海さんの声のトーンが、ずるずるっと一段落ちた。"
 show char tna03s2
 with dis

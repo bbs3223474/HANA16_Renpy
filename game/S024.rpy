@@ -480,7 +480,7 @@ m "「………………」"
 "信じていた通り……だったわ。"
 
 
-show char tmi03p at left
+show char tmi03p at hleft
 show char tri03m at right as r
 with dis
 
@@ -600,7 +600,7 @@ voice "Risa_0704"
 r "「私もね、実はちょっとだけ同じ気持ちだったのよ……美夜と」"
 
 
-show char tmi04p at left
+show char tmi04p at hleft
 with dis
 
 
@@ -611,7 +611,7 @@ voice "Risa_0705"
 r "「ええ。みんなと一緒も楽しいけれど、今ここに美夜と２人っきりだったら素敵なのに……って思ったこと、何度かあったの」"
 
 
-show char tmi01p at left
+show char tmi01p at hleft
 with dis
 
 
@@ -627,7 +627,7 @@ m "「璃紗……」"
 
 
 #allClear:
-hide char tmi01p at left
+hide char tmi01p at hleft
 hide char tri01m at right as r
 #lastBG:
 #scene bg bg37a
@@ -712,10 +712,10 @@ stop music fadeout 1
 #waitcancel disabled
 #log off
 
-scene image eyecatch05
+scene image "image/eyecatch05.png"
 #wipe vshutter#############################
 
-#wait 3000
+pause 3
 
 scene black
 with Dis

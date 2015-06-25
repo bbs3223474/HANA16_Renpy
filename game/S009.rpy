@@ -733,10 +733,10 @@ stop music fadeout 1
 #waitcancel disabled
 #log off
 
-scene image eyecatch01
+scene image "image/eyecatch01.png"
 #wipe vshutter
 
-#wait 3000
+pause 3
 
 scene black
 with Dis

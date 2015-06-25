@@ -144,7 +144,7 @@ with dis
 
 
 voice "mobAll_0000"
-all "「カンパ～イ」"
+a "「カンパ～イ」"
 "南の島での１日目の夜は、砂浜でバーベキューになった。"
 "みんなで夕方から準備を始めて、わいわい言いながら、材料を切り分けたりして。"
 "本当に、去年の合宿の時みたいだった。"
@@ -907,14 +907,13 @@ with dis
 voice "Risa_0629"
 r "「ちょ、ちょっと麗奈センセイっ！」"
 
-
 hide char trn02f2 at sright as sr
 with dis
 
 
 "私に尋ねる暇も与えずに、麗奈先生はサッと行ってしまった。"
 
-
+hide char tmi02f2 at sleft as l
 show char tmi02f2 at left
 show char tri03f2 at right as r
 with dis
@@ -1474,10 +1473,10 @@ stop music fadeout 1
 #waitcancel disabled
 #log off
 
-scene image eyecatch04
+scene image "image/eyecatch04.png"
 #wipe vshutter##########################
 
-#wait 3000
+pause 3
 
 scene black
 with Dis

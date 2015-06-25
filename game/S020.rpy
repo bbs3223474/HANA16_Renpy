@@ -239,7 +239,7 @@ voice "Sizuku0043"
 sk "「エリス……気をつけてくださいね」"
 
 
-show char ter01p at left
+show char ter01p at hleft
 show char tsi03m at right as r
 with dis
 
@@ -274,7 +274,7 @@ sk "「もう！　エリス、ふざけないでください」"
 
 #※CU04
 #allClear:
-hide char ter01p at left
+hide char ter01p at hleft
 hide char tsi07m at right as r
 #lastBG:
 #scene bg bg39a

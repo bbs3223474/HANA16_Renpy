@@ -678,7 +678,8 @@ voice "Erisu_0007"
 e "「ふふふっ……どんな勝負だって、受けて立つわ」"
 "いきなりエリスさまと玲緒さま、対決モード突入！？"
 
-
+hide char ter02f2 at left
+hide char tre08s2 at right as r
 show char ter02f2 at sleft as l
 show char tsi08f2
 show char tre08s2 at sright as sr

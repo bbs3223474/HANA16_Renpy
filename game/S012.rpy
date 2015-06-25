@@ -169,7 +169,7 @@ voice "Risa_0326"
 r "「……それで、何かわかりましたか？」"
 
 
-show char tna03p at left
+show char tna03p at hleft
 show char tri03s2 at right as r
 with dis
 
@@ -181,7 +181,7 @@ voice "Risa_0327"
 r "「そうね……そんな簡単にいくことじゃないものね」"
 
 
-show char tna01p at left
+show char tna01p at hleft
 with dis
 
 
@@ -199,7 +199,7 @@ voice "Risa_0328"
 r "「うんうん、また何かあったら、連絡してね」"
 
 
-hide char tna01p at left
+hide char tna01p at hleft
 with dis
 
 
@@ -599,9 +599,9 @@ r "「でも……庶民連合かぁ……」"
 
 
 #//（以下妄想）
-show char moyan as c
 show char tna03s2 at left
 show char tri01s2 at right as r
+show char moyan as c
 with dis
 
 

@@ -207,7 +207,7 @@ voice "Risa_0537"
 r "「……もしかして、麗奈先生ですか？」"
 
 
-show char trn02p at left
+show char trn02p at hleft
 show char tri01f2 at right as r
 with dis
 
@@ -232,7 +232,7 @@ voice "Risa_0539"
 r "「先生は今、どちらにいらっしゃるんですか？」"
 
 
-show char trn01p at left
+show char trn01p at hleft
 with dis
 
 
@@ -312,7 +312,7 @@ r "「えっ！？　ちょ、ちょっと先生」"
 #♀SE059
 play sound "sound/SE059.ogg"
 
-hide char trn01p at left
+hide char trn01p at hleft
 #wipe flash#################################
 
 
