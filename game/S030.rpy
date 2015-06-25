@@ -423,7 +423,7 @@ with dis
 "いくらベストカップルに選ばれているとはいえ、ありえないって。"
 
 # 此处已去除游戏强制二周目解锁其他角色路线的设定。
-# Unlocked the limit of force goto Rika&Sayuki route at first play.
+# Removed the limit of force goto Rika&Sayuki route at first play.
 #★★★選択肢関係の加筆　ここから
 #//（１周目は、こっちのシナリオです）
 #if s1==1 sentaku
@@ -446,7 +446,7 @@ menu:
 
 
 # 因为已经去去除强制一周目限制，以下直至label select06_1的台词均作废。
-# Because I've unlock the limit, all dialogues from now until "label select06_1" is useless.
+# Because I've removed the limit, all dialogues from now until "label select06_1" are useless.
 "リサ姉だって、あんなに顔を赤くしているし……んっ？"
 
 
