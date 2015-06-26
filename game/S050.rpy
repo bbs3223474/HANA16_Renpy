@@ -83,9 +83,9 @@ menu:
  "是":
   jump S051
  "否":
-  jump hscene
+  jump hscene_rikka5
 
-label hscene:
+label hscene_rikka5:
 
 
 #※EV023
