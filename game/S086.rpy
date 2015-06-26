@@ -667,6 +667,7 @@ stop music fadeout 1
 
 
 #//END
+# This is the end of Nanami&Yuuna route.
 #set f2 3
 jump staffroll
 
