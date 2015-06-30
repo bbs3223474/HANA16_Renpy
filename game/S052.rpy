@@ -1014,11 +1014,8 @@ rk "（沙雪さん……ワタシ、絶対に認めてもらいます、沙雪�
 #mes clear
 #system off
 
-
-#wipecancel disabled
-#waitcancel disabled
-#log off
-
+$ _skipping = False
+$ _dismiss_pause = False
 
 scene image "image/end01.png"
 with Dis
@@ -1030,7 +1027,8 @@ pause 5
 #log on
 #waitcancel enabled
 #wipecancel enabled
-
+$ _skipping = True
+$ _dismiss_pause = True
 
 #**暗転
 scene black

@@ -2069,6 +2069,8 @@ stop music fadeout 1
 
 
 if risa_route:
+     $ _skipping = False
+     $ _dismiss_pause = False
      scene image "image/eyecatch02.png"
      #wipe vshutter
 
@@ -2079,7 +2081,8 @@ if risa_route:
      jump S053
 
 if nanami_route:
-
+     $ _skipping = False
+     $ _dismiss_pause = False
      scene image "image/eyecatch02.png"
      #wipe vshutter
 
@@ -2090,7 +2093,8 @@ if nanami_route:
      jump S070
 
 if sara_route:
-
+     $ _skipping = False
+     $ _dismiss_pause = False
      scene image "image/eyecatch04.png"
      #wipe vshutter
 
@@ -2101,6 +2105,8 @@ if sara_route:
      jump S087
 
 if reo_route:
+     $ _skipping = False
+     $ _dismiss_pause = False
      scene image "image/eyecatch05.png"
      #wipe vshutter
 
@@ -2111,7 +2117,8 @@ if reo_route:
      jump S104
 
 if rikka_route:
-
+     $ _skipping = False
+     $ _dismiss_pause = False
      scene image "image/eyecatch01.png"
      #wipe vshutter
 
