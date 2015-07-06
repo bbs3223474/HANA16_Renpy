@@ -2078,52 +2078,62 @@ if risa_route:
 
      scene black
      with Dis
+     $ _skipping = True
+     $ _dismiss_pause = True
      jump S053
 
 if nanami_route:
      $ _skipping = False
      $ _dismiss_pause = False
      scene image "image/eyecatch02.png"
-     #wipe vshutter
+     with vs
 
      pause 3
 
      scene black
      with Dis
+     $ _skipping = True
+     $ _dismiss_pause = True
      jump S070
 
 if sara_route:
      $ _skipping = False
      $ _dismiss_pause = False
      scene image "image/eyecatch04.png"
-     #wipe vshutter
+     with vs
 
      pause 3
 
      scene black
      with Dis
+     $ _skipping = True
+     $ _dismiss_pause = True
      jump S087
 
 if reo_route:
      $ _skipping = False
      $ _dismiss_pause = False
      scene image "image/eyecatch05.png"
-     #wipe vshutter
+     with vs
 
      pause 3
 
      scene black
      with Dis
+     $ _skipping = True
+     $ _dismiss_pause = True
      jump S104
 
 if rikka_route:
      $ _skipping = False
      $ _dismiss_pause = False
      scene image "image/eyecatch01.png"
-     #wipe vshutter
+     with vs
 
      pause 3
 
      scene black
      with Dis
+     $ _skipping = True
+     $ _dismiss_pause = True
      jump S031
