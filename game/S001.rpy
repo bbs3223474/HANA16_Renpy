@@ -34,7 +34,7 @@ with Dis
 "我，安昙璃纱，一如既往地和最爱的恋人——绫濑美夜过着每一天。"
 
 scene bg bg05a
-with dis
+with Dis
 show char tri08s2
 voice "Risa_0000"
 r "「美夜真是的……到底跑哪去了啊？」"
@@ -54,7 +54,6 @@ r "「到了这个年纪，和恋人一起捉迷藏啊……呵呵」"
 "不知不觉地就笑了出来。"
 "听起来是多么的平静啊。"
 
-stop voice
 show char tri04s2
 with dis
 voice "Risa_0003"
@@ -64,7 +63,6 @@ with dis
 "突然感觉到周围的视线，我四下望了一圈。"
 "总感觉有人在对着我偷笑……可我谁也没看见啊？"
 
-stop voice
 show char tri01s2
 with dis
 voice "Risa_0004"
@@ -72,14 +70,12 @@ r "「……咳咳，嗯，呃……还是去中庭看看吧？」"
 "真是的……随随便便就从口中蹦出恋人这个词语。"
 "我是很喜欢美夜啦……但在别人面前，果然还是觉得害羞。"
 
-stop voice
 show char tri03s2
 with dis
 voice "Risa_0005"
 r "「我要是和美夜说了，她肯定会觉得都到这份上了还说这个干嘛……」"
 "而且，我和美夜在成为恋人关系之前，已经随着班里同学的意思当选最佳情侣了。"
 "在大家眼里，我们俩已经是一对了嘛。"
-stop voice
 
 show char tri05s2
 with dis
@@ -93,7 +89,7 @@ r "「啊，还真热呢……嗯，今天似乎气温挺高的，美夜果然�
 "两手拍了拍脸颊，我朝着中庭继续前进。"
 
 scene bg bg21a
-with dis
+with Dis
 show char tri03s2
 with dis
 voice "Risa_0008"
@@ -220,9 +216,8 @@ voice "Risa_0022"
 r "「一年级的一对新最佳情侣吗……会是什么样的孩子当选呢」"
 "稍微……不对，相当在意啊。"
 
-hide bg
-hide char tri01s2
-with fade
+scene black
+with Dis
 stop music fadeout 1
 
 jump S002

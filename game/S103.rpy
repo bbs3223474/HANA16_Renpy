@@ -419,7 +419,7 @@ $ _skipping = False
 $ _dismiss_pause = False
 
 
-scene bg end04
+scene image "image/end04.png"
 with Dis
 
 pause 5

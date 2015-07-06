@@ -8,7 +8,7 @@ $ save_name = "◇二人の仲直り"
 
 #**新校舎廊下・昼
 scene bg bg05a
-with dis
+with Dis
 
 
 
@@ -158,7 +158,7 @@ r "「はぁ、はぁ……美夜、入るわよ」"
 
 #**アトリエ・昼
 scene bg bg29a
-with dis
+with Dis
 
 
 
@@ -711,7 +711,7 @@ with Dis
 
 
 voice "Risa_0269"
-r "「あぁ、はぁん……もぉ、美夜のエッチぃぃっ……やぁぁん{image=image/exch001.png}\001」"
+r "「あぁ、はぁん……もぉ、美夜のエッチぃぃっ……やぁぁん{image=image/exch001.png}{image=image/exch001.png}」"
 
 
 #**暗転
@@ -722,19 +722,19 @@ scene black
 #allClear:
 #lastBG:
 #scene black
-with dis
+with Dis
 
 
 #♂MS
 stop music fadeout 1
 
 
-#wipecancel disabled
-#waitcancel disabled
+$ _skipping = False
+$ _dismiss_pause = False
 #log off
 
 scene image "image/eyecatch01.png"
-#wipe vshutter
+with vs
 
 pause 3
 
@@ -742,8 +742,8 @@ scene black
 with Dis
 
 #log on
-#waitcancel enabled
-#wipecancel enabled
+$ _skipping = True
+$ _dismiss_pause = True
 
 
 #//END

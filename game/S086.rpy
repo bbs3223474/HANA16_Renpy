@@ -640,8 +640,8 @@ n "「わたしもいっぱい、愛しています……優菜お姉さま{imag
 #system off
 
 
-#wipecancel disabled
-#waitcancel disabled
+$ _skipping = False
+$ _dismiss_pause = False
 #log off
 
 
@@ -653,8 +653,8 @@ pause 5
 
 
 #log on
-#waitcancel enabled
-#wipecancel enabled
+$ _skipping = True
+$ _dismiss_pause = True
 
 
 #**暗転
@@ -667,7 +667,6 @@ stop music fadeout 1
 
 
 #//END
-# This is the end of Nanami&Yuuna route.
 #set f2 3
 jump staffroll
 

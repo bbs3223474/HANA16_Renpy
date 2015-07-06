@@ -691,4 +691,4 @@ init:
     $ sright = Position(xpos=0.82, ypos=1.0)
     $ hleft = Position(xpos=0.26, ypos=0.5)
     $ hc = Position(xpos=0.5, ypos=0.5)
-    $ hr = Position(xpos=0.75, ypos=0.5)
+    $ hright = Position(xpos=0.75, ypos=0.5)

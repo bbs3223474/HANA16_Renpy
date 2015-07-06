@@ -1006,8 +1006,8 @@ m "「ちゅぱ、んふ……これってもう、新婚生活ね{image=image/e
 #system off
 
 
-#wipecancel disabled
-#waitcancel disabled
+$ _skipping = False
+$ _dismiss_pause = False
 #log off
 
 
@@ -1019,8 +1019,8 @@ pause 5
 
 
 #log on
-#waitcancel enabled
-#wipecancel enabled
+$ _skipping = True
+$ _dismiss_pause = True
 
 
 #**暗転

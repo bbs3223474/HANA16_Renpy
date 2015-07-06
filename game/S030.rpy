@@ -645,7 +645,7 @@ with dis
 
 
 voice "Nanami0253"
-n "「んんっ{image=image/exch001.png}　ちゅっ……くぅん\001」"
+n "「んんっ{image=image/exch001.png}　ちゅっ……くぅん{image=image/exch001.png}」"
 
 
 show char tka01m at left
@@ -664,7 +664,7 @@ with dis
 
 
 voice "Sara_0145"
-sr "「あぁ、楓ちゃん、かっこ良すぎ{image=image/exch001.png}　紗良も楓ちゃんを守るよ。そしてずっとずっと、楓ちゃんと一緒だよ……大好き、楓ちゃん\001」"
+sr "「あぁ、楓ちゃん、かっこ良すぎ{image=image/exch001.png}　紗良も楓ちゃんを守るよ。そしてずっとずっと、楓ちゃんと一緒だよ……大好き、楓ちゃん{image=image/exch001.png}」"
 
 
 show char tka04m at left
@@ -2067,12 +2067,12 @@ with Dis
 
 stop music fadeout 1
 
+$ _skipping = False
+$ _dismiss_pause = False
 
 if risa_route:
-     $ _skipping = False
-     $ _dismiss_pause = False
      scene image "image/eyecatch02.png"
-     #wipe vshutter
+     with vs
 
      pause 3
 
@@ -2083,8 +2083,6 @@ if risa_route:
      jump S053
 
 if nanami_route:
-     $ _skipping = False
-     $ _dismiss_pause = False
      scene image "image/eyecatch02.png"
      with vs
 
@@ -2097,8 +2095,6 @@ if nanami_route:
      jump S070
 
 if sara_route:
-     $ _skipping = False
-     $ _dismiss_pause = False
      scene image "image/eyecatch04.png"
      with vs
 
@@ -2111,8 +2107,6 @@ if sara_route:
      jump S087
 
 if reo_route:
-     $ _skipping = False
-     $ _dismiss_pause = False
      scene image "image/eyecatch05.png"
      with vs
 
@@ -2125,8 +2119,6 @@ if reo_route:
      jump S104
 
 if rikka_route:
-     $ _skipping = False
-     $ _dismiss_pause = False
      scene image "image/eyecatch01.png"
      with vs
 

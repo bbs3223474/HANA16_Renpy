@@ -1,4 +1,4 @@
-#「ドキドキ、初デート\001」
+#「ドキドキ、初デート{image=image/exch001.png}」
 
 label S037:
 $ save_name = "◇ドキドキ、初デート♪"

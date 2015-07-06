@@ -126,14 +126,13 @@ scene black
 #allClear:
 #lastBG:
 #scene black
-with dis
+with Dis
 
 
 
 #**アトリエ・昼
 scene bg bg29a
-show char alpha
-with dis
+with Dis
 
 
 

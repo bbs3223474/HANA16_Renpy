@@ -18,8 +18,7 @@ $ save_name = "◇璃紗、三角関係発覚！？"
 
 #**新校舎教室・昼
 scene bg bg04a
-show char alpha
-with dis
+with Dis
 
 
 
@@ -332,7 +331,7 @@ r "「くっ、くぅぅぅ……」"
 
 #**青空
 scene bg bg42a
-with dis
+with Dis
 
 
 
@@ -340,7 +339,7 @@ with dis
 "私のあの写真が、美夜の手にずっと残るのかと思うと……ちょっと割に合わないんじゃないかと思えてしまった。"
 
 scene black
-with dis
+with Dis
 
 
 
@@ -352,8 +351,7 @@ with dis
 
 #**委員会室・昼
 scene bg bg30a
-show char alpha
-with dis
+with Dis
 
 
 
@@ -468,8 +466,6 @@ with dis
 "麻衣さまの意見に、みんなうんうん頷く。"
 "まだベストカップルに選ばれた２人を見てはいないけれど、その話題性だけで十分、楽しみになってきた。"
 
-show char alpha
-with dis
 show char tka02s2
 with dis
 
@@ -512,8 +508,6 @@ r "「……ふふふっ」"
 "相変わらず、紗良さんと楓さまって仲良いなぁ。"
 "こっちまで、ほほえましくなってくる。"
 
-show char alpha
-with dis
 show char tyu01s2
 with dis
 
@@ -1184,14 +1178,13 @@ re "「だ、だから麻衣、こんなところで……ひゃぅぅん！　�
 #mes clear
 #system off
 scene black
-with dis
+with Dis
 
 
 
 #**委員会室・昼
 scene bg bg30a
-show char alpha
-with dis
+with Dis
 
 
 
@@ -1491,7 +1484,7 @@ n "「六夏さんと、知り合いなの？」"
 
 #※EV001P1
 scene bg EV01p1
-with dis
+with Dis
 
 
 

@@ -712,12 +712,12 @@ with Dis
 stop music fadeout 1
 
 
-#wipecancel disabled
-#waitcancel disabled
+$ _skipping = False
+$ _dismiss_pause = False
 #log off
 
 scene image "image/eyecatch01.png"
-#wipe vshutter
+with vs
 
 pause 3
 
@@ -725,8 +725,8 @@ scene black
 with Dis
 
 #log on
-#waitcancel enabled
-#wipecancel enabled
+$ _skipping = True
+$ _dismiss_pause = True
 
 
 #//END

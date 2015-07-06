@@ -748,12 +748,12 @@ stop music fadeout 1
 #//それ以外なら、下記の『途中ＥＮＤ』へ。
 #if f1<2 badend
 
-#wipecancel disabled
-#waitcancel disabled
+$ _skipping = False
+$ _dismiss_pause = False
 #log off
 
 scene image "image/eyecatch03.png"
-#wipe vshutter
+with vs
 
 pause 3
 
@@ -761,7 +761,7 @@ scene black
 with Dis
 
 #log on
-#waitcancel enabled
-#wipecancel enabled
+$ _skipping = True
+$ _dismiss_pause = True
 
 jump S081

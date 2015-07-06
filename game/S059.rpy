@@ -848,7 +848,7 @@ m "「すごいわ、璃紗……璃紗が感じているの、すごくわか�
 voice "Risa_1276"
 r "「あうっ、きゃぅぅん{image=image/exch001.png}　美夜、みやぁぁ……あん、イク、もうイクぅぅ{image=image/exch001.png}」"
 voice "Miya_0793"
-m "「いいわよ、璃紗……わたくしの舌で、イッて{image=image/exch001.png}\001」"
+m "「いいわよ、璃紗……わたくしの舌で、イッて{image=image/exch001.png}{image=image/exch001.png}」"
 voice "Risa_1277"
 r "「こんなところで私、イッちゃうんだわ……ぁ、あっ……美夜、イクのぉ……イッちゃうのぉぉ{image=image/exch001.png}{image=image/exch001.png}」"
 

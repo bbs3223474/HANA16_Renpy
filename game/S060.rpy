@@ -61,7 +61,7 @@ with Dis
 
 voice "Risa_1302"
 r "「美夜が私を、お姫様抱っこ……」"
-"それは、ちょっと素敵\001"
+"それは、ちょっと素敵{image=image/exch001.png}"
 
 
 #※EV032

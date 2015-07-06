@@ -11,7 +11,7 @@ $ save_name = "◇もう誰も、信じられない……"
 
 #**中庭・昼
 scene bg bg21a
-with dis
+with Dis
 
 
 
@@ -140,7 +140,6 @@ with Dis
 
 #**新校舎廊下・昼
 scene bg bg05a
-show char alpha
 with Dis
 
 
@@ -351,7 +350,7 @@ with Dis
 
 #**新校舎廊下・昼
 scene bg bg05a
-with dis
+with Dis
 
 
 
@@ -529,7 +528,6 @@ with Dis
 
 #**旧校舎廊下・昼
 scene bg bg20a
-show char alpha
 with Dis
 
 
@@ -1007,7 +1005,7 @@ m "「……なんだ、ふふっ、そういうことだったのね……ん�
 
 #※EV002P1
 scene bg EV02p1
-with dis
+with Dis
 
 
 
@@ -1144,7 +1142,6 @@ with Dis
 
 #**住宅街・昼
 scene bg bg08c
-show char alpha
 with Dis
 
 
@@ -1236,7 +1233,6 @@ with Dis
 
 #**六夏の部屋・昼
 scene bg bg34c
-show char alpha
 with Dis
 
 

@@ -7,8 +7,13 @@
 #skipoff
 #wipecancel disabled
 #waitcancel disabled
+# 以上代码通过向Ren'py引擎作者反馈，已经实现了功能的开启与关闭，此功能包含在最新的每夜版引擎中。
+# Statements above was realized by feedback to the author of Ren'py and contained in the latest nightly.
 
 label staffroll:
+$ _skipping = False
+$ _dismiss_pause = False
+# 以上两行变量即对应skipoff与waitcancel，dismiss_pause同时包含wipecancel。
 scene black
 #wipe flash
 
@@ -31,10 +36,10 @@ if reo_route:
 
 label rollhed1:
 menu:
- "跳过制作人员列表":
-  jump rollend
  "观看制作人员列表":
   jump rollhed1start
+ "跳过制作人员列表":
+  jump rollend
 
 
 label rollhed1start:
@@ -817,6 +822,7 @@ jump rollend
 
 
 label rollend:
-
+$ _skipping = True
+$ _dismiss_pause = True
 return
 with Dis

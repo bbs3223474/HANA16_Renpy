@@ -260,7 +260,7 @@ with Dis
 
 
 voice "Rikka_1221"
-rk "「ひゃんっ{image=image/exch001.png}\001　やああぁぁんっ、だめっ、だめぇぇっ{image=image/exch001.png}」"
+rk "「ひゃんっ{image=image/exch001.png}{image=image/exch001.png}　やああぁぁんっ、だめっ、だめぇぇっ{image=image/exch001.png}」"
 "机に手を着かされて、お尻を突き出す格好にさせられて。"
 "そんなワタシの股間に、沙雪さんは……その愛らしい唇を、押し当ててきた。"
 voice "Sayuki0643"
