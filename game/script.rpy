@@ -22,9 +22,22 @@ define mobB = Character('女子B', color="#ffffff")
 define mobC = Character('女子C', color="#ffffff")
 define mobD = Character('女子D', color="#ffffff")
 define mobE = Character('女子E', color="#ffffff")
+define ss = Character('沙雪祖母', color="#fff")
+define sh = Character('沙雪母', color="#fff")
+define rr = Character('璃　恵', color="#fff")
 define j = Character('教　師', color="#fff")
+define yn = Character('雪　乃', color="#fff")
+define nh = Character('七海母', color="#fff")
+define nf = Character('七海父', color="#fff")
+define mg = Character('マネージャー', color="#fff")
+define kt = Character('監　督', color="#fff")
+define ka = Character('会員Ａ', color="#fff")
+define kb = Character('会員Ｂ', color="#fff")
+define kc = Character('会員Ｃ', color="#fff")
+define mao = Character('麻衣弟', color="#fff")
+define mai = Character)('麻衣妹', color="#fff")
 define x = Character('？？？', color="#ffffff")
-define all = Character('全　員', color="#fff")
+define a = Character('全　員', color="#fff")
 image black = "#000"
 image white = "#fff"
 #########################################
@@ -34,12 +47,12 @@ image white = "#fff"
 init:
     $ lrotate = ImageDissolve("data/mask/mask_rotateright.png", 2.0, 20)
     $ rrotate = ImageDissolve("data/mask/mask_rotateleft.png", 2.0, 20)
+    $ vs = ImageDissolve("data/mask/mask_vshutter.png", 0.5, 60)
     define lr = lrotate
     define rr = rrotate
 
 # 导入游戏OP视频，在进入程序时自动播放。
 label splashscreen:
-
     $ renpy.movie_cutscene('data/op.avi')
     return
 
