@@ -652,7 +652,7 @@ scene image "image/end05.png"
 with Dis
 
 
-pause5
+pause 5
 
 
 #log on
