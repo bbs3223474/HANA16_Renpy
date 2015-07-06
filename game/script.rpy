@@ -35,7 +35,7 @@ define ka = Character('会員Ａ', color="#fff")
 define kb = Character('会員Ｂ', color="#fff")
 define kc = Character('会員Ｃ', color="#fff")
 define mao = Character('麻衣弟', color="#fff")
-define mai = Character)('麻衣妹', color="#fff")
+define mai = Character('麻衣妹', color="#fff")
 define x = Character('？？？', color="#ffffff")
 define a = Character('全　員', color="#fff")
 image black = "#000"
