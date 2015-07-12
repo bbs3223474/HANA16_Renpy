@@ -130,8 +130,8 @@ init -1 python hide:
     ## is not drawn.
     ## マージンは、ウインドウ背景の外側のスペースを意味します。
 
-    # style.window.left_margin = 6
-    # style.window.right_margin = 6
+    style.window.left_margin = 3
+    style.window.right_margin = 3
     # style.window.top_margin = 6
     # style.window.bottom_margin = 6
 
@@ -139,10 +139,10 @@ init -1 python hide:
     ## drawn.
     ## パディングは、ウインドウ背景の内側のスペースを意味します。
 
-    # style.window.left_padding = 6
-    # style.window.right_padding = 6
-    # style.window.top_padding = 6
-    # style.window.bottom_padding = 6
+    style.window.left_padding = 20
+    style.window.right_padding = 20
+    style.window.top_padding = 10
+    style.window.bottom_padding = 10
 
     ## This is the minimum height of the window, including the margins
     ## and padding.
@@ -356,11 +356,11 @@ init -1 python hide:
 
     ## Used when entering the game menu from the game.
     ## ゲームメニューを開いた時のトランジション。
-    config.enter_transition = None
+    config.enter_transition = dissolve
 
     ## Used when exiting the game menu to the game.
     ## ゲームメニューを閉じた時のトランジション。
-    config.exit_transition = None
+    config.exit_transition = dissolve
 
     ## Used between screens of the game menu.
     ## ゲームメニュー内の項目を切り替える時のトランジション。
@@ -368,19 +368,19 @@ init -1 python hide:
 
     ## Used when entering the game menu from the main menu.
     ## メインメニューからゲームメニューに移行する時のトランジション。
-    config.main_game_transition = None
+    config.main_game_transition = dissolve
 
     ## Used when returning to the main menu from the game.
     ## ゲームを中断してメインメニューに戻る時のトランジション。
-    config.game_main_transition = None
+    config.game_main_transition = dissolve
 
     ## Used when entering the main menu from the splashscreen.
     ## スプラッシュスクリーンからメインメニューに移行する時のトランジション。
-    config.end_splash_transition = None
+    config.end_splash_transition = fade
 
     ## Used when entering the main menu after the game has ended.
     ## ゲームを終了してメインメニューに戻る時のトランジション。
-    config.end_game_transition = None
+    config.end_game_transition = Dissolve
 
     ## Used when a game is loaded.
     ## ゲームをロードした時のトランジション。
@@ -388,11 +388,11 @@ init -1 python hide:
 
     ## Used when the window is shown.
     ## ノベルウィンドウを表示する時のトランジション。
-    config.window_show_transition = None
+    config.window_show_transition = dissolve
 
     ## Used when the window is hidden.
     ## ノベルウィンドウを閉じる時のトランジション。
-    config.window_hide_transition = None
+    config.window_hide_transition = dissolve
 
     ## Used when showing NVL-mode text directly after ADV-mode text.
     ## アドベンチャーモードからノベルモードへ移行する時のトランジション。
@@ -404,11 +404,11 @@ init -1 python hide:
 
     ## Used when yesno is shown.
     ## イエス・ノープロンプトを表示する時のトランジション。
-    config.enter_yesno_transition = None
+    config.enter_yesno_transition = dissolve
 
     ## Used when the yesno is hidden.
     ## イエス・ノープロンプトを閉じる時のトランジション。
-    config.exit_yesno_transition = None
+    config.exit_yesno_transition = dissolve
 
     ## Used when entering a replay
     ## リプレイモードに入る時のトランジション。
@@ -520,14 +520,14 @@ init -1 python hide:
     ## トップレイヤーはトランジションの影響を受けません。
     # config.top_layers = [ ]
 
-    ## ロールバックをノベルモード用に変更します。
-    # config.nvl_paged_rollback = True
+    ## 回滚剧情时使用NVL模式。
+    config.nvl_paged_rollback = True
 
     ## 選択肢表示をノベルモードで行います。
     # menu = nvl_menu
 
     ## 设定是否允许通过鼠标拖拽改变窗口大小。
-     #config.gl_resize = False
+    config.gl_resize = False
 
     ## ゲーム起動時にウィンドウを中央に表示します。
     # import os
@@ -639,13 +639,14 @@ init python:
     build.archive('char', 'all')
     build.archive('sound', 'all')
     build.archive('data', 'all')
+    build.archive('tl', 'all')
 
     ## To archive files, classify them as 'archive'.
     ## アーカイブに含めるには、'archive' に分類します。
     ## 此处用于定义需要放进封包的游戏资源文件列表，需要事先定义。
-    build.classify('game/**.rpy', 'script')
-    build.classify('game/**.rpyc', 'script')
-    build.classify('game/**.rpyb', 'script')
+    build.classify('game/*.rpy', 'script')
+    build.classify('game/*.rpyc', 'script')
+    build.classify('game/*.rpyb', 'script')
     build.classify('game/bg/**.png', 'image')
     build.classify('game/char/**.png', 'image')
     build.classify('game/image/**.png', 'image')
@@ -653,6 +654,7 @@ init python:
     build.classify('game/sound/**.ogg', 'sound')
     build.classify('game/data/**.**', 'data')
     build.classify('game/data/mask/**.**', 'data')
+    build.classify('game/tl/**.**', 'tl')
 
     ## Files matching documentation patterns are duplicated in a mac app
     ## build, so they appear in both the app and the zip file.
