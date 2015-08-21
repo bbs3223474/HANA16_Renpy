@@ -48,6 +48,9 @@ init:
     $ lrotate = ImageDissolve("data/mask/mask_rotateright.png", 2.0, 20)
     $ rrotate = ImageDissolve("data/mask/mask_rotateleft.png", 2.0, 20)
     $ vs = ImageDissolve("data/mask/mask_vshutter.png", 0.5, 60)
+    define dis3 = Dissolve(3.0, alpha=False, time_warp=None)
+    define dis5 = Dissolve(5.0, alpha=False, time_warp=None)
+    define dis7 = Dissolve(7.0, alpha=False, time_warp=None)
     define lr = lrotate
     define rr = rrotate
 
