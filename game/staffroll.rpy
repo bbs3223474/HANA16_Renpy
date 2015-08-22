@@ -15,7 +15,7 @@ $ _skipping = False
 $ _dismiss_pause = False
 # 以上两行变量即对应skipoff与waitcancel，dismiss_pause同时包含wipecancel。
 scene black
-#wipe flash
+with dis3
 
 
 #if f2==1 roll_1
@@ -48,145 +48,144 @@ play music "sound/bgm25.ogg"
 
 
 scene white
-with Dis
+with dis7
 
 scene image "image/sr01.png"
-with Dis
+with dis5
 pause 7
 
 scene white
-with Dis
-
+with dis3
 
 scene image "image/sr02_1.png"
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image "image/sr03_1.png"
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image "image/sr04_1.png"
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image "image/sr05_1.png"
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image "image/sr06_1.png"
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image "image/sr07.png"
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image "image/sr08.png"
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image "image/sr11_1.png"
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image "image/sr12_1.png"
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image "image/sr13_1.png"
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image "image/sr14_1.png"
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image "image/sr15_1.png"
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image "image/sr16_1.png"
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image "image/sr17_1.png"
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image "image/sr18_1.png"
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image "image/sr19.png"
-with Dis
+with dis3
 pause 12
 
 
-stop music fadeout 1
+stop music fadeout 5.0
 
 scene black
-with Dis
+with dis5
 
 jump rollend
 
@@ -204,145 +203,145 @@ play music "sound/bgm25.ogg"
 
 
 scene white
-with Dis
+with dis7
 
 scene image sr01
-with Dis
+with dis5
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr02_2
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr03_2
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr04_2
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr05_2
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr06_2
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr07
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr08
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr11_2
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr12_2
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr13_2
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr14_2
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr15_2
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr16_2
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr17_2
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr18_2
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr19
-with Dis
+with dis3
 pause 12
 
 
-stop music fadeout 1
+stop music fadeout 5.0
 
 scene black
-with Dis
+with dis5
 
 #set s2 1
 
@@ -363,145 +362,145 @@ play music "sound/bgm25.ogg"
 
 
 scene white
-with Dis
+with dis7
 
 scene image sr01
-with Dis
+with dis5
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr02_3
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr03_3
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr04_3
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr05_3
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr06_3
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr07
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr08
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr11_3
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr12_3
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr13_3
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr14_3
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr15_3
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr16_3
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr17_3
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr18_3
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr19
-with Dis
+with dis3
 pause 12
 
 
-stop music fadeout 1
+stop music fadeout 5.0
 
 scene black
-with Dis
+with dis5
 
 
 jump rollend
@@ -521,145 +520,145 @@ play music "sound/bgm25.ogg"
 
 
 scene white
-with Dis
+with dis7
 
 scene image sr01
-with Dis
+with dis5
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr02_4
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr03_4
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr04_4
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr05_4
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr06_4
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr07
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr08
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr11_4
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr12_4
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr13_4
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr14_4
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr15_4
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr16_4
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr17_4
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr18_4
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr19
-with Dis
+with dis3
 pause 12
 
 
-stop music fadeout 1
+stop music fadeout 5.0
 
 scene black
-with Dis
+with dis5
 
 
 jump rollend
@@ -678,145 +677,145 @@ play music "sound/bgm25.ogg"
 
 
 scene white
-with Dis
+with dis7
 
 scene image sr01
-with Dis
+with dis5
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr02_5
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr03_5
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr04_5
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr05_5
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr06_5
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr07
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr08
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr11_5
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr12_5
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr13_5
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr14_5
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr15_5
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr16_5
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr17_5
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr18_5
-with Dis
+with dis3
 pause 5
 
 scene white
-with Dis
+with dis3
 
 
 scene image sr19
-with Dis
+with dis3
 pause 12
 
 
-stop music fadeout 1
+stop music fadeout 5.0
 
 scene black
-with Dis
+with dis5
 
 jump rollend
 
@@ -825,4 +824,3 @@ label rollend:
 $ _skipping = True
 $ _dismiss_pause = True
 return
-with Dis
