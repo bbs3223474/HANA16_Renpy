@@ -141,7 +141,7 @@ init -1 python hide:
 
     style.window.left_padding = 20
     style.window.right_padding = 20
-    style.window.top_padding = 10
+    style.window.top_padding = 6
     style.window.bottom_padding = 10
 
     ## This is the minimum height of the window, including the margins
@@ -242,8 +242,11 @@ init -1 python hide:
 
     ## The default size of text.
     ## 字体大小。
+    ## 本项目需要编译移动平台版本，因此需要适当增加字体大小以便阅读。
+    ## Due to this project needs to compile a mobile version,
+    ## we have to increase font sizes in order to read in phones.
 
-    style.default.size = 22
+    style.default.size = 28
 
     ## Note that these only change the size of some of the text. Other
     ## buttons have their own styles.
@@ -256,45 +259,45 @@ init -1 python hide:
     ## 日本語の禁則処理を設定します。
     ## "japanese-strict", "japapese-normal", "japanese-loose"から選択します。
 
-    style.default.language = "japanese-strict"
-    style._default.language = "japanese-strict"
+    # style.default.language = "japanese-strict"
+    # style._default.language = "japanese-strict"
 
-    ## ダイアログとナレーションのテキストを変更します。
+    ## 对话与旁白的字体大小。
 
     # style.say_dialogue.size = 22
     # style.say_thought.size = 22
 
-    ## centered や show text で使用するテキストを変更します。
+    ## 通过 centered 及 show text 调用的字体大小。
 
     # style.centered_text.size = 22
     # style.vcentered_text.size = 22
 
-    ## キャラクター名表示用のテキストを変更します。デフォルトでは太文字
-    ## ですが、アウトラインと置き換えた方が見やすいかもしれません。
+    ## 更改角色名称的字体属性。默认为粗体，
+    ## 但通过替换轮廓（outline）的方法可能更容易辨别。
 
-    style.say_label.size = 22
+    style.say_label.size = 24
     style.say_label.bold = False
     style.say_label.outlines=[(1,"#000d"), (1,"#0009",2,2)]
 
-    ## label のテキストを変更します。
-    ## label は preferences の各項目名として使われます。
+    ## 修改 label 的字体大小。
+    ## label 作为 preferences 的各项目名称被调用。
 
     # style.label_text.size = 22
 
-    ## button のテキストを変更します
+    ## 修改 button 的字体大小。
 
-    # style.button_text.size = 22
-    # style.large_button_text.size = 16
+    style.button_text.size = 28
+    style.large_button_text.size = 24
 
-    ## それ以外のスクリーン用テキストを変更します。
+    ## 修改除此之外所有 screen 用的字体大小。
     # style.text.size = 22
 
-    ## ルビの位置を微調整します。
+    ## 微调旁注文字（Ruby text）的属性。
 
     # style.ruby_text.size = 12
     # style.ruby_text.yoffset = -20
 
-    ## ルビが振れるようにダイアログとナレーションの行間を広げます。
+    ## 为使旁注文字能够正确放置，设置对话与旁白的行间距。
 
     # style.say_dialogue.line_leading = 12
     # style.say_thought.line_leading = 12
@@ -364,7 +367,7 @@ init -1 python hide:
 
     ## Used between screens of the game menu.
     ## ゲームメニュー内の項目を切り替える時のトランジション。
-    config.intra_transition = None
+    config.intra_transition = dissolve
 
     ## Used when entering the game menu from the main menu.
     ## メインメニューからゲームメニューに移行する時のトランジション。
@@ -380,11 +383,11 @@ init -1 python hide:
 
     ## Used when entering the main menu after the game has ended.
     ## ゲームを終了してメインメニューに戻る時のトランジション。
-    config.end_game_transition = Dissolve
+    config.end_game_transition = Dissolve(1.0, alpha=False, time_warp=None)
 
     ## Used when a game is loaded.
     ## ゲームをロードした時のトランジション。
-    config.after_load_transition = None
+    config.after_load_transition = dissolve
 
     ## Used when the window is shown.
     ## ノベルウィンドウを表示する時のトランジション。

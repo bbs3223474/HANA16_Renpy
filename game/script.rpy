@@ -55,8 +55,13 @@ init:
     define rr = rrotate
 
 # 导入游戏OP视频，在进入程序时自动播放。
+# Opening move, auto play when opening game.
+# 注意：PC版Ren'py引擎仅支持avi格式的视频，而若需要在移动设备上播放，
+# 请使用移动设备支持的mp4@H.264格式！
+# NOTICE: Ren'py on PCs can only support .avi videos, 
+# if you want to play at mobile platform, please use .mp4@H.264 format.
 label splashscreen:
-    $ renpy.movie_cutscene('data/op.avi')
+    $ renpy.movie_cutscene('data/op.mp4')
     return
 
 # 为方便移植，此脚本除Defines等非脚本功能以外将不再使用，此处直接使用jump命令跳过。
