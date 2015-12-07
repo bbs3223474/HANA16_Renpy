@@ -481,7 +481,7 @@ with dis
 
 "美夜にお礼を言って、六夏は行ってしまった。"
 
-
+hide char tmi01s2 at sleft as l
 show char tmi01s2 at left
 show char tri08s2 at right as r
 with dis
